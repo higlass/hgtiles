@@ -285,8 +285,54 @@ def format_cooler_tile(tile_data_array):
 
     return tile_data
 
+def add_transform_type(tile_id):
+    '''
+    Add a transform type to a cooler tile id if it's not already
+    present.
+
+    Parameters
+    ----------
+    tile_id: str
+        A tile id (e.g. xyz.0.1.0)
+
+    Returns
+    -------
+    new_tile_id: str
+        A formatted tile id, potentially with an added transform_type
+    '''
+    tile_id_parts = tile_id.split('.')
+    tileset_uuid = tile_id_parts[0]
+    tile_position = tile_id_parts[1:4]
+
+    transform_type = get_transform_type(tile_id)
+    new_tile_id = ".".join([tileset_uuid] + tile_position + [transform_type])
+    return new_tile_id
 
 def tiles(filepath, tile_ids):
+    '''
+    '''
+    transform_id_to_original_id = {}
+
+    new_tile_ids = []
+
+    for tile_id in tile_ids:
+        new_tile_id = add_transform_type(tile_id)
+        transform_id_to_original_id[new_tile_id] = tile_id
+        new_tile_ids += [new_tile_id]
+
+    generated_tiles = generate_tiles(filepath, new_tile_ids)
+    
+    tiles_to_return = []
+    for tile_id, tile_value in generated_tiles:
+        if tile_id in transform_id_to_original_id:
+            original_tile_id = transform_id_to_original_id[tile_id]
+
+            tiles_to_return += [(original_tile_id, tile_value)]
+
+    return tiles_to_return
+
+
+def generate_tiles(filepath, tile_ids):
     '''
     Generate tiles from a cooler file.
     Parameters

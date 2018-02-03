@@ -1,3 +1,138 @@
+import base64
+import collections as col
+import cooler.contrib.higlass as cch
+import hgtiles.utils as hgut
+import h5py
+import itertools as it
+import numpy as np
+
+global mats
+mats = {}
+
+def make_tiles(hdf_for_resolution, resolution, x_pos, y_pos, transform_type='default', x_width=1, y_width=1):
+    '''
+    Generate tiles for a given location. This function retrieves tiles for
+    a rectangular region of width x_width and height y_width
+
+    Parameters
+    ---------
+    hdf_for_resolution: h5py.File
+        An HDF group containing the cooler for the given resolution
+    x_pos: int
+        The starting x position
+    y_pos: int
+        The starting y position
+    cooler_file: string
+        The filename of the cooler file to get the data from
+    x_width: int 
+        The number of tiles to retrieve along the x dimension
+    y_width: int
+        The number of tiles to retrieve along the y dimension
+
+    Returns
+    -------
+    data_by_tilepos: {(x_pos, y_pos) : np.array}
+        A dictionary of tile data indexed by tile positions
+    '''
+    BINS_PER_TILE = 256
+
+    tile_size = resolution * BINS_PER_TILE
+
+    start1 = x_pos * tile_size
+    end1 = (x_pos + x_width) * tile_size
+    start2 = y_pos * tile_size
+    end2 = (y_pos + y_width) * tile_size
+
+    '''
+    print("transform_type:", transform_type);
+    print('start1:', start1, end1)
+    print('start2:', start2, end2)
+    '''
+
+    data = cch.get_data(
+        hdf_for_resolution, start1, end1 - 1, start2, end2 - 1, 
+        transform_type
+    )
+
+    #print("data:", data)
+
+    #print("x_width:", x_width)
+    #print("y_width:", y_width)
+    # split out the individual tiles
+    data_by_tilepos = {}
+
+    for x_offset in range(0, x_width):
+        for y_offset in range(0, y_width):
+
+            start1 = (x_pos + x_offset) * tile_size
+            end1 = (x_pos + x_offset+ 1) * tile_size
+            start2 = (y_pos + y_offset) * tile_size
+            end2 = (y_pos + y_offset + 1) * tile_size
+
+            '''
+            print("resolution:", resolution)
+            print("tile_size", tile_size)
+            print("x_pos:", x_pos, "x_offset", x_offset)
+            print("start1", start1, 'end1', end1)
+            print("start2", start2, 'end2', end2)
+            '''
+
+            df = data[data['genome_start1'] >= start1]
+            df = df[df['genome_start1'] < end1]
+
+            df = df[df['genome_start2'] >= start2]
+            df = df[df['genome_start2'] < end2]
+
+            binsize = resolution
+
+            j = (df['genome_start1'].values - start1) // binsize
+            i = (df['genome_start2'].values - start2) // binsize
+
+            if 'balanced' in df:
+                v = np.nan_to_num(df['balanced'].values)
+            else:
+                v = np.nan_to_num(df['count'].values)
+
+            out = np.zeros(65536, dtype=np.float32)  # 256^2
+            index = [int(x) for x in (i * 256) + j]
+
+            if len(v):
+                out[index] = v
+
+            data_by_tilepos[(x_pos + x_offset, y_pos + y_offset)] = out
+
+    return data_by_tilepos
+
+def bin_tiles_by_zoom_level_and_transform(tile_ids):
+    '''
+    Place these tiles into separate lists according to their
+    zoom level and transform type
+
+    Parameters
+    ----------
+    tile_ids: [str,...]
+        A list of tile_ids (e.g. xyx.0.0.1) identifying the tiles
+        to be retrieved
+
+    Returns
+    -------
+    tile_lists: {(zoomLevel, transformType): [tile_id, tile_id]}
+        A dictionary of tile ids
+    '''
+    tile_id_lists = col.defaultdict(set)
+
+    for tile_id in tile_ids:
+        tile_id_parts = tile_id.split('.')
+        tile_position = list(map(int, tile_id_parts[1:4]))
+        zoom_level = tile_position[0]
+
+        transform_method = get_transform_type(tile_id)
+
+
+        tile_id_lists[(zoom_level, transform_method)].add(tile_id)
+
+    return tile_id_lists
+
 def get_transform_type(tile_id):
     '''
     Get the transform type specified in the tile id.
@@ -47,14 +182,18 @@ def get_available_transforms(cooler):
 
     return transforms
 
-def make_mats(dset):
-    f = h5py.File(dset, 'r')
+def make_mats(filepath):
+    '''
+    Create the file handle and tileset info for a cooler 
+    tileset
+    '''
+    f = h5py.File(filepath, 'r')
 
     if 'resolutions' in f:
         # this file contains raw resolutions so it'll return a different
         # sort of tileset info
         info = {"resolutions": tuple(sorted(map(int, list(f['resolutions'].keys())))) }
-        mats[dset] = [f, info]
+        mats[filepath] = [f, info]
 
         # see which transforms are available, a transform has to be
         # available at every available resolution in order for it to
@@ -74,9 +213,9 @@ def make_mats(dset):
         
         info['max_pos'] = [genome_length, genome_length]
         info['min_pos'] = [1,1]
-        return
+        return (f, info)
 
-    info = cch.get_info(dset)
+    info = cch.get_info(filepath)
 
     info["min_pos"] = [int(m) for m in info["min_pos"]]
     info["max_pos"] = [int(m) for m in info["max_pos"]]
@@ -86,7 +225,26 @@ def make_mats(dset):
     if "transforms" in info:
         info["transforms"] = list(info["transforms"])
 
-    mats[dset] = [f, info]
+    mats[filepath] = [f, info]
+    return (f, info)
+
+
+def tileset_info(filepath):
+    '''
+    Get the tileset info for a cooler file
+
+    Parameters:
+    -----------
+
+    filepath: str
+        The location of the cooler file
+    '''
+    if filepath in mats:
+        return mats[filepath][1]
+    else:
+        (f, info) = make_mats(filepath)
+
+        return info
 
 def format_cooler_tile(tile_data_array):
     '''
@@ -128,7 +286,7 @@ def format_cooler_tile(tile_data_array):
     return tile_data
 
 
-def generate_cooler_tiles(tileset, tile_ids):
+def tiles(filepath, tile_ids):
     '''
     Generate tiles from a cooler file.
     Parameters
@@ -144,16 +302,15 @@ def generate_cooler_tiles(tileset, tile_ids):
         A list of tile_id, tile_data tuples
     '''
     BINS_PER_TILE = 256
-    filename = tut.get_datapath(tileset.datafile)
 
-    if filename not in mats:
+    if filepath not in mats:
         # check if this tileset is open
-        make_mats(filename)
+        make_mats(filepath)
 
-    tileset_file_and_info = mats[filename]
+    tileset_file_and_info = mats[filepath]
 
     tile_ids_by_zoom_and_transform = bin_tiles_by_zoom_level_and_transform(tile_ids).values()
-    partitioned_tile_ids = list(it.chain(*[partition_by_adjacent_tiles(t) 
+    partitioned_tile_ids = list(it.chain(*[hgut.partition_by_adjacent_tiles(t) 
         for t in tile_ids_by_zoom_and_transform]))
 
     generated_tiles = []

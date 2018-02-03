@@ -7,5 +7,5 @@ setup(
     author='Peter Kerpedjiev',
     author_email='pkerpedjiev@gmail.com',
     url='',
-    packages=['hgtiles', 'hgtiles.bigwig'],
+    packages=['hgtiles'],
 )

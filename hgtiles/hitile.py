@@ -1,11 +1,17 @@
-def bigwig_tsinfo(bwpath):
+import base64
+import clodius.hdf_tiles as hdft
+import h5py
+import math
+import numpy as np
+
+def tileset_info(hitile_path):
     '''
-    Get the tileset info for a bigWig file
+    Get the tileset info for a hitile file.
 
     Parameters
     ----------
-    bwpath: string
-        The path to the bigwig file from which to retrieve data
+    hitile_path: string
+        The path to the hitile file
 
     Returns
     -------
@@ -15,25 +21,34 @@ def bigwig_tsinfo(bwpath):
                     'max_zoom': 7
                     }
     '''
-    TILE_SIZE = 1024
-    chromsizes = bbi.chromsizes(bwpath)
-    chromosomes = cooler.util.natsorted(chromsizes.keys())
-    chromsizes = pd.Series(chromsizes)[chromosomes]
-    min_tile_cover = np.ceil(sum(chromsizes) / TILE_SIZE)
-    max_zoom = int(np.ceil(np.log2(min_tile_cover)))
-    tileset_info = {
-        'min_pos': [0],
-        'max_pos': [TILE_SIZE * 2 ** max_zoom],
-        'max_width': TILE_SIZE * 2 ** max_zoom,
-        'tile_size': TILE_SIZE,
-        'max_zoom': max_zoom
-    }
-    return tileset_info
+    hdf_file = h5py.File(hitile_path, 'r')
 
+    d = hdf_file['meta']
 
-def bigwig_tiles(bwpath, tile_ids):
+    if "min-pos" in d.attrs:
+        min_pos = d.attrs['min-pos']
+    else:
+        min_pos = 0
+
+    if "max-pos" in d.attrs:
+        max_pos = d.attrs['max-pos']
+    else:
+        max_pos = d.attrs['max-length']
+
+    return {
+                "max_pos": [int(max_pos)],
+                'min_pos': [int(min_pos)],
+                "max_width": 2 ** math.ceil(
+                    math.log(max_pos - min_pos
+                    ) / math.log(2)
+                ),
+                "max_zoom": int(d.attrs['max-zoom']),
+                "tile_size": int(d.attrs['tile-size'])
+            }
+
+def tiles(filepath, tile_ids):
     '''
-    Generate tiles from a bigwig file.
+    Generate tiles from a hitile file.
 
     Parameters
     ----------
@@ -48,22 +63,17 @@ def bigwig_tiles(bwpath, tile_ids):
     tile_list: [(tile_id, tile_data),...]
         A list of tile_id, tile_data tuples
     '''
-    import base64
-    TILE_SIZE = 1024
     generated_tiles = []
+
     for tile_id in tile_ids:
         tile_id_parts = tile_id.split('.')
         tile_position = list(map(int, tile_id_parts[1:3]))
-        zoom_level = tile_position[0]
-        tile_pos = tile_position[1]
-        
-        # this doesn't combine multiple consequetive ids, which
-        # would speed things up
-        max_depth = tilesets.bigwig_tiles.get_quadtree_depth(tilesets.bigwig_tiles.get_chromsizes(bwpath))
-        tile_size = TILE_SIZE * 2 ** (max_depth - zoom_level)
-        start_pos = tile_pos * tile_size
-        end_pos = start_pos + tile_size
-        dense = tilesets.bigwig_tiles.get_bigwig_tile(bwpath, zoom_level, start_pos, end_pos)
+
+        dense = hdft.get_data(
+            h5py.File(filepath),
+            tile_position[0],
+            tile_position[1]
+        )
 
         if len(dense):
             max_dense = max(dense)
@@ -93,5 +103,6 @@ def bigwig_tiles(bwpath, tile_ids):
             }
 
         generated_tiles += [(tile_id, tile_value)]
+
     return generated_tiles
 

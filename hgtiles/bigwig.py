@@ -1,4 +1,94 @@
-def bigwig_tsinfo(bwpath):
+import bbi
+import cooler
+import functools as ft
+import logging
+import numpy as np
+import pandas as pd
+import re
+import time
+
+TILE_SIZE = 1024
+
+logger = logging.getLogger(__name__)
+
+def get_quadtree_depth(chromsizes):
+    tile_size_bp = TILE_SIZE
+    min_tile_cover = np.ceil(sum(chromsizes) / tile_size_bp)
+    return int(np.ceil(np.log2(min_tile_cover)))
+
+def get_zoom_resolutions(chromsizes):
+    return [2**x for x in range(get_quadtree_depth(chromsizes) + 1)][::-1]
+
+def natsort_key(s, _NS_REGEX=re.compile(r'(\d+)', re.U)):
+        return tuple([int(x) if x.isdigit() else x
+                             for x in _NS_REGEX.split(s) if x])
+
+def natcmp(x, y):
+    if x.find('_') >= 0:
+        x_parts = x.split('_')
+        if y.find('_') >= 0:
+            # chr_1 vs chr_2
+            y_parts = y.split('_')
+
+            return natcmp(x_parts[1], y_parts[1])
+        else:
+            # chr_1 vs chr1
+            # chr1 comes first
+            return 1
+    if y.find('_') >= 0:
+        # chr1 vs chr_1
+        # y comes second
+        return -1
+
+    _NS_REGEX=re.compile(r'(\d+)', re.U)
+    x_parts = tuple([int(a) if a.isdigit() else a
+                             for a in _NS_REGEX.split(x) if a])
+    y_parts = tuple([int(a) if a.isdigit() else a
+                             for a in _NS_REGEX.split(y) if a])
+
+    if x == 'chrM':
+        # chrM goes at the end of the non alternate contigs
+        return 1
+    if y == 'chrM':
+        return -1
+
+    if x_parts < y_parts:
+        return -1
+    elif y_parts > x_parts:
+        return 1
+    else:
+        return 0
+
+def natsorted(iterable):
+    return sorted(iterable, key=ft.cmp_to_key(natcmp))
+
+def get_chromsizes(bwpath):
+    """
+    TODO: replace this with negspy
+    
+    Also, return NaNs from any missing chromosomes in bbi.fetch
+    
+    """
+    chromsizes = bbi.chromsizes(bwpath)
+    chromosomes = natsorted(chromsizes.keys())
+    #print("chromosomes", chromosomes)
+    chrom_series = pd.Series(chromsizes)[chromosomes]
+    return chrom_series
+
+def abs2genomic(chromsizes, start_pos, end_pos):
+    abs_chrom_offsets = np.r_[0, np.cumsum(chromsizes.values)]
+    cid_lo, cid_hi = np.searchsorted(abs_chrom_offsets,
+                                     [start_pos, end_pos],
+                                     side='right') - 1
+    rel_pos_lo = start_pos - abs_chrom_offsets[cid_lo]
+    rel_pos_hi = end_pos - abs_chrom_offsets[cid_hi]
+    start = rel_pos_lo
+    for cid in range(cid_lo, cid_hi):
+        yield cid, start, chromsizes[cid]
+        start = 0
+    yield cid_hi, start, rel_pos_hi
+
+def tileset_info(bwpath):
     '''
     Get the tileset info for a bigWig file
 
@@ -30,8 +120,46 @@ def bigwig_tsinfo(bwpath):
     }
     return tileset_info
 
+def get_bigwig_tile(bwpath, zoom_level, start_pos, end_pos):
+    t1 = time.time()
+    chromsizes = get_chromsizes(bwpath)
+    t2 = time.time()
 
-def bigwig_tiles(bwpath, tile_ids):
+    # print("chromosomes time:", t2 - t1)
+    resolutions = get_zoom_resolutions(chromsizes)
+    binsize = resolutions[zoom_level]
+   
+    arrays = []
+    for cid, start, end in abs2genomic(chromsizes, start_pos, end_pos):
+        n_bins = int(np.ceil((end - start) / binsize))
+        try:
+            chrom = chromsizes.index[cid]
+            clen = chromsizes.values[cid]
+
+            t1 = time.time()
+            #print("fetching:", chrom, start, end, n_bins);
+            x = bbi.fetch(bwpath, chrom, start, end,
+                          bins=n_bins, missing=np.nan)
+            t2 = time.time()
+
+            if t2 - t1 > 0.5:
+                print("fetching:", chrom, start, end, n_bins, "fetched time: {:.2f}".format(time.time() - t1))
+
+            # drop the very last bin if it is smaller than the binsize
+            if end == clen and clen % binsize != 0:
+                x = x[:-1]
+        except IndexError:
+            # beyond the range of the available chromosomes
+            # probably means we've requested a range of absolute
+            # coordinates that stretch beyond the end of the genome
+            x = np.zeros(n_bins)
+
+        arrays.append(x)
+
+    return np.concatenate(arrays)
+
+
+def tiles(bwpath, tile_ids):
     '''
     Generate tiles from a bigwig file.
 
@@ -59,11 +187,11 @@ def bigwig_tiles(bwpath, tile_ids):
         
         # this doesn't combine multiple consequetive ids, which
         # would speed things up
-        max_depth = tilesets.bigwig_tiles.get_quadtree_depth(tilesets.bigwig_tiles.get_chromsizes(bwpath))
+        max_depth = get_quadtree_depth(get_chromsizes(bwpath))
         tile_size = TILE_SIZE * 2 ** (max_depth - zoom_level)
         start_pos = tile_pos * tile_size
         end_pos = start_pos + tile_size
-        dense = tilesets.bigwig_tiles.get_bigwig_tile(bwpath, zoom_level, start_pos, end_pos)
+        dense = get_bigwig_tile(bwpath, zoom_level, start_pos, end_pos)
 
         if len(dense):
             max_dense = max(dense)
@@ -95,3 +223,27 @@ def bigwig_tiles(bwpath, tile_ids):
         generated_tiles += [(tile_id, tile_value)]
     return generated_tiles
 
+def chromsizes(filename):
+    '''
+    Get a list of chromosome sizes from this [presumably] bigwig
+    file.
+
+    Parameters:
+    -----------
+    filename: string
+        The filename of the bigwig file
+
+    Returns
+    -------
+    chromsizes: [(name:string, size:int), ...]
+        An ordered list of chromosome names and sizes
+    '''
+    try:
+        chrom_series = get_chromsizes(filename)
+        data = []
+        for chrom, size in chrom_series.iteritems():
+            data.append([chrom, size])
+        return data
+    except Exception as ex:
+        logger.error(ex)
+        raise Exception('Error loading chromsizes from bigwig file: {}'.format(ex))

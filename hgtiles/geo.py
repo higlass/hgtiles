@@ -67,17 +67,15 @@ def tileset_info(filepath):
         'zoom_step': res[0],
         'tile_size': res[1],
         'max_zoom': res[2],
-        'min_x': res[3],
-        'max_x': res[4],
-        'min_y': res[5],
-        'max_y': res[6],
+        'min_pos': [res[3], res[5]],
+        'max_pos': [res[4], res[6]],
         'max_data_length': res[1] * 2 ** res[2],
     }
 
     return o
 
 
-def tiles(db_file, zoom, x, y, width=1, height=1):
+def get_tiles(db_file, zoom, x, y, width=1, height=1):
     '''
     Retrieve a contiguous set of tiles from a 2D db tile file.
 

@@ -19,8 +19,12 @@ And
 
 ```
 def generate_tiles(filepath, tile_ids):
-  ```
+  '''
   This should return a list of tiles in the form:
   
   [(tile_id, tile_value),...]
-  ```
+  '''
+```
+
+That's all. These functions can then be called from `higlass-server` to generate
+the tiles passed to the client.

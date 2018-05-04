@@ -147,3 +147,61 @@ def get_tile(f, chromsizes, resolution, start_pos, end_pos, shape):
     # print("total fetch time:", t3 - t0)
 
     return np.concatenate(arrays)[:shape[0]]
+
+def tileset_info(filename):
+    '''
+    Return some information about this tileset that will
+    help render it in on the client.
+
+    Parameters
+    ----------
+    filename: str
+      The filename of the h5py file containing the tileset info.
+
+    Returns
+    -------
+    tileset_info: {}
+      A dictionary containing the information describing
+      this dataset
+    '''
+    t1 = time.time()
+    f = h5py.File(filename, 'r')
+    t2 = time.time()
+    # a sorted list of resolutions, lowest to highest
+    # awkward to write because a the numbers representing resolution
+    # are datapoints / pixel so lower resolution is actually a higher
+    # number
+    resolutions = sorted([int(r) for r in f['resolutions'].keys()])[::-1]
+
+    # the "leftmost" datapoint position
+    # an array because higlass can display multi-dimensional
+    # data
+    min_pos = [0]
+    max_pos = [int(sum(f['chroms']['length'][:]))]
+
+    # the "rightmost" datapoint position
+    # max_pos = [len(f['resolutions']['values'][str(resolutions[-1])])]
+    tile_size = int(f['info'].attrs['tile-size'])
+    first_chrom = f['chroms']['name'][0]
+
+    shape = list(f['resolutions'][str(resolutions[0])]['values'][first_chrom].shape)
+    shape[0] = tile_size
+
+    t3 = time.time()
+    # print("tileset info time:", t3 - t2)
+
+    tileset_info = {
+      'resolutions': resolutions,
+      'min_pos': min_pos,
+      'max_pos': max_pos,
+      'tile_size': tile_size,
+      'shape': shape
+    }
+
+    if 'row_infos' in f['resolutions'][str(resolutions[0])].attrs:
+        row_infos = f['resolutions'][str(resolutions[0])].attrs['row_infos']
+        tileset_info['row_infos'] = [r.decode('utf8') for r in row_infos]
+
+    f.close()
+
+    return tileset_info

@@ -1,5 +1,6 @@
 import base64
 import collections as col
+import cooler
 import hgtiles.utils as hgut
 import h5py
 import itertools as it
@@ -114,14 +115,19 @@ def get_data(f, start_pos_1, end_pos_1, start_pos_2, end_pos_2, transform='defau
         pixels['balanced'] = (
             pixels['count'] * pixels['weight1'] * pixels['weight2']
         )
-        return pixels[['genome_start1', 'genome_start2', 'balanced']]
+
+        weight1 = bins['weight'][i0:i1+1].values
+        weight2 = bins['weight'][j0:j1+1].values
+        return (pixels[['genome_start1', 'genome_start2', 'balanced']], (weight1, weight2))
     elif transform in ('KR', 'VC', 'VC_SQRT'):
         pixels['balanced'] = (
             pixels['count'] / pixels[transform+'1'] / pixels[transform+'2']
         )
-        return pixels[['genome_start1', 'genome_start2', 'balanced']]
+        weight1 = bins[transform][i0:i1+1].values
+        weight2 = bins[transform][j0:j1+1].values
+        return (pixels[['genome_start1', 'genome_start2', 'balanced']], (weight1, weight2))
     else:
-        return pixels[['genome_start1', 'genome_start2', 'count']]
+        return (pixels[['genome_start1', 'genome_start2', 'count']], (None, None))
 
  
 def get_info(file_path):
@@ -246,10 +252,13 @@ def make_tiles(hdf_for_resolution, resolution, x_pos, y_pos, transform_type='def
     print('start2:', start2, end2)
     '''
 
-    data = get_data(
+    (data, (weight1, weight2)) = get_data(
         hdf_for_resolution, start1, end1 - 1, start2, end2 - 1, 
         transform_type
     )
+
+    print('weight1', weight1)
+
 
     #print("data:", data)
 
@@ -282,21 +291,25 @@ def make_tiles(hdf_for_resolution, resolution, x_pos, y_pos, transform_type='def
 
             binsize = resolution
 
-            j = (df['genome_start1'].values - start1) // binsize
-            i = (df['genome_start2'].values - start2) // binsize
+            j = ((df['genome_start1'].values - start1) // binsize).astype(int)
+            i = ((df['genome_start2'].values - start2) // binsize).astype(int)
 
             if 'balanced' in df:
                 v = np.nan_to_num(df['balanced'].values)
             else:
                 v = np.nan_to_num(df['count'].values)
 
-            out = np.zeros(65536, dtype=np.float32)  # 256^2
-            index = [int(x) for x in (i * 256) + j]
+            out = np.zeros((256, 256), dtype=np.float32)
+            print("i:", i)
+            out[i, j] = v
 
-            if len(v):
-                out[index] = v
+            if weight1 is not None and weight2 is not None:
+                isnan1 = np.isnan(weight1)
+                isnan2 = np.isnan(weight2)
 
-            data_by_tilepos[(x_pos + x_offset, y_pos + y_offset)] = out
+                out[isnan1, :] = np.nan
+                out[:, isnan2] = np.nan
+            data_by_tilepos[(x_pos + x_offset, y_pos + y_offset)] = out.ravel()
 
     return data_by_tilepos
 

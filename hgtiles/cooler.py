@@ -5,6 +5,7 @@ import hgtiles.utils as hgut
 import h5py
 import itertools as it
 import numpy as np
+import pandas as pd
 
 global mats
 mats = {}
@@ -32,8 +33,28 @@ def abs_coord_2_bin(c, abs_pos, chroms, chrom_cum_lengths, chrom_sizes):
  
     return c.offset((chrom, rel_pos, chrom_sizes[chrom]))
 
+def abs_coord_2_bin2(c, abs_pos, chroms, chrom_cum_lengths, chrom_sizes):
+    """Get bin ID from absolute coordinates.
+ 
+    Args:
+        c (Cooler): Cooler instance of a .cool file.
+        abs_pos (int): Absolute coordinate to be translated.
+ 
+    Returns:
+        int: Bin number.
+    """
+ 
+    try:
+        chr_id = np.flatnonzero(chrom_cum_lengths > abs_pos)[0] - 1
+    except IndexError:
+        return c.info['nbins']
+ 
+    chrom = chroms[chr_id]
+    rel_pos = abs_pos - chrom_cum_lengths[chr_id]
+ 
+    return c.offset2((chrom, rel_pos, chrom_sizes[chrom]))
 
-def get_chromosome_names_cumul_lengths(c):
+def get_chromosome_names_cumul_lengths(chromnames, chromsizes):
     '''
     Get the chromosome names and cumulative lengths:
  
@@ -45,12 +66,11 @@ def get_chromosome_names_cumul_lengths(c):
  
     (names, sizes, lengths) -> (list(string), dict, np.array(int))
     '''
-    chrom_names = c.chromnames
-    chrom_sizes = dict(c.chromsizes)
-    chrom_cum_lengths = np.r_[0, np.cumsum(c.chromsizes.values)]
+    chrom_names = chromnames
+    chrom_sizes = dict(chromsizes)
+    chrom_cum_lengths = np.r_[0, np.cumsum(chromsizes.values)]
     return chrom_names, chrom_sizes, chrom_cum_lengths
- 
- 
+
 def get_data(f, start_pos_1, end_pos_1, start_pos_2, end_pos_2, transform='default'):
     """Get balanced pixel data.
  
@@ -68,13 +88,14 @@ def get_data(f, start_pos_1, end_pos_1, start_pos_2, end_pos_2, transform='defau
  
     c = cooler.Cooler(f)
  
-    (chroms, chrom_sizes, chrom_cum_lengths) = get_chromosome_names_cumul_lengths(c)
- 
+    (chroms, chrom_sizes, chrom_cum_lengths) = get_chromosome_names_cumul_lengths(c.chromnames, c.chromsizes)
+    (chroms2, chrom_sizes2, chrom_cum_lengths2) = get_chromosome_names_cumul_lengths(c.chromnames2, c.chromsizes2)
+
     i0 = abs_coord_2_bin(c, start_pos_1, chroms, chrom_cum_lengths, chrom_sizes)
     i1 = abs_coord_2_bin(c, end_pos_1, chroms, chrom_cum_lengths, chrom_sizes)
 
-    j0 = abs_coord_2_bin(c, start_pos_2, chroms, chrom_cum_lengths, chrom_sizes)
-    j1 = abs_coord_2_bin(c, end_pos_2, chroms, chrom_cum_lengths, chrom_sizes)
+    j0 = abs_coord_2_bin2(c, start_pos_2, chroms2, chrom_cum_lengths2, chrom_sizes2)
+    j1 = abs_coord_2_bin2(c, end_pos_2, chroms2, chrom_cum_lengths2, chrom_sizes2)
 
     '''
     print('i', i0, i1)
@@ -96,7 +117,7 @@ def get_data(f, start_pos_1, end_pos_1, start_pos_2, end_pos_2, transform='defau
     pixels = matrix[i0:i1+1, j0:j1+1]
 
     if not len(pixels):
-        return pd.DataFrame(columns=['genome_start1', 'genome_start2', 'balanced'])
+        return (pd.DataFrame(columns=['genome_start1', 'genome_start2', 'balanced']), ([], []))
  
     # select bin columns to extract
     cols = ['chrom', 'start', 'end']
@@ -151,9 +172,14 @@ def get_info(file_path):
  
         c = cooler.Cooler(f["0"])
  
-        (chroms, chrom_sizes, chrom_cum_lengths) = get_chromosome_names_cumul_lengths(c)
+        (chroms, chrom_sizes, chrom_cum_lengths) = get_chromosome_names_cumul_lengths(c.chromnames, c.chromsizes)
+        (chroms2, chrom_sizes2, chrom_cum_lengths2) = get_chromosome_names_cumul_lengths(c.chromnames2, c.chromsizes2)
  
-        total_length = int(chrom_cum_lengths[-1])
+        total_chrom1_length =int(chrom_cum_lengths[-1]) 
+        total_chrom2_length = int(chrom_cum_lengths2[-1])
+
+        total_length = max(total_chrom1_length, total_chrom2_length)
+
         max_zoom = f.attrs['max-zoom']
         bin_size = int(f[str(max_zoom)].attrs['bin-size'])
  
@@ -176,7 +202,7 @@ def get_info(file_path):
 
         info = {
             'min_pos': [0.0, 0.0],
-            'max_pos': [total_length, total_length],
+            'max_pos': [total_chrom1_length, total_chrom2_length],
             'max_zoom': max_zoom,
             'max_width': max_width,
             'bins_per_dimension': TILE_SIZE,
@@ -303,12 +329,14 @@ def make_tiles(hdf_for_resolution, resolution, x_pos, y_pos, transform_type='def
             print("i:", i)
             out[i, j] = v
 
+            '''
             if weight1 is not None and weight2 is not None:
                 isnan1 = np.isnan(weight1)
                 isnan2 = np.isnan(weight2)
 
                 out[isnan1, :] = np.nan
                 out[:, isnan2] = np.nan
+            '''
             data_by_tilepos[(x_pos + x_offset, y_pos + y_offset)] = out.ravel()
 
     return data_by_tilepos

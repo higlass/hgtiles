@@ -93,7 +93,7 @@ def get_data(f, start_pos_1, end_pos_1, start_pos_2, end_pos_2, transform='defau
 
     #print("size", matrix.shape)
 
-    pixels = matrix[i0:i1+1, j0:j1+1]
+    pixels = matrix[i0:i1, j0:j1]
 
     if not len(pixels):
         return pd.DataFrame(columns=['genome_start1', 'genome_start2', 'balanced'])
@@ -116,15 +116,15 @@ def get_data(f, start_pos_1, end_pos_1, start_pos_2, end_pos_2, transform='defau
             pixels['count'] * pixels['weight1'] * pixels['weight2']
         )
 
-        weight1 = bins['weight'][i0:i1+1].values
-        weight2 = bins['weight'][j0:j1+1].values
+        weight1 = bins['weight'][i0:i1].values
+        weight2 = bins['weight'][j0:j1].values
         return (pixels[['genome_start1', 'genome_start2', 'balanced']], (weight1, weight2))
     elif transform in ('KR', 'VC', 'VC_SQRT'):
         pixels['balanced'] = (
             pixels['count'] / pixels[transform+'1'] / pixels[transform+'2']
         )
-        weight1 = bins[transform][i0:i1+1].values
-        weight2 = bins[transform][j0:j1+1].values
+        weight1 = bins[transform][i0:i1].values
+        weight2 = bins[transform][j0:j1].values
         return (pixels[['genome_start1', 'genome_start2', 'balanced']], (weight1, weight2))
     else:
         return (pixels[['genome_start1', 'genome_start2', 'count']], (None, None))
@@ -257,8 +257,7 @@ def make_tiles(hdf_for_resolution, resolution, x_pos, y_pos, transform_type='def
         transform_type
     )
 
-    print('weight1', weight1)
-
+    #print('start1', start1, 'end1', end1, 'weight', len(weight1), 'end1 - start1 / tile_size', (end1 - start1) / resolution)
 
     #print("data:", data)
 
@@ -274,6 +273,11 @@ def make_tiles(hdf_for_resolution, resolution, x_pos, y_pos, transform_type='def
             end1 = (x_pos + x_offset+ 1) * tile_size
             start2 = (y_pos + y_offset) * tile_size
             end2 = (y_pos + y_offset + 1) * tile_size
+
+            i0 = x_offset * BINS_PER_TILE
+            i1 = i0 + BINS_PER_TILE
+            j0 = y_offset * BINS_PER_TILE
+            j1 = j0 + BINS_PER_TILE
 
             '''
             print("resolution:", resolution)
@@ -300,15 +304,20 @@ def make_tiles(hdf_for_resolution, resolution, x_pos, y_pos, transform_type='def
                 v = np.nan_to_num(df['count'].values)
 
             out = np.zeros((256, 256), dtype=np.float32)
-            print("i:", i)
+            # print("i:", i)
             out[i, j] = v
 
+            #print('weight1:', len(weight1))
             if weight1 is not None and weight2 is not None:
-                isnan1 = np.isnan(weight1)
-                isnan2 = np.isnan(weight2)
+                isnan1 = np.array(list(np.isnan(weight1[i0:i1])) + [True] * (BINS_PER_TILE - len(weight1[i0:i1])))
+                isnan2 = np.array(list(np.isnan(weight2[j0:j1])) + [True] * (BINS_PER_TILE - len(weight2[j0:j1])))
 
-                out[isnan1, :] = np.nan
-                out[:, isnan2] = np.nan
+                #isnan1 = np.concatenate(isnan1, np.zeros(BINS_PER_TILE-len(isnan1)))
+                #isnan2 = np.concatenate(isnan2, np.array([False
+
+                out[:,isnan1-1] = np.nan
+                out[isnan2-1,:] = np.nan
+
             data_by_tilepos[(x_pos + x_offset, y_pos + y_offset)] = out.ravel()
 
     return data_by_tilepos
@@ -474,8 +483,8 @@ def format_cooler_tile(tile_data_array):
 
     tile_data = {}
 
-    min_dense = float(np.min(tile_data_array))
-    max_dense = float(np.max(tile_data_array))
+    min_dense = float(np.nanmin(tile_data_array))
+    max_dense = float(np.nanmax(tile_data_array))
 
     tile_data["min_value"] = min_dense
     tile_data["max_value"] = max_dense

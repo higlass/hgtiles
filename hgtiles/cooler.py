@@ -10,6 +10,12 @@ import pandas as pd
 global mats
 mats = {}
 
+transform_descriptions = {}
+transform_descriptions['weight'] = {'name': 'ICE', 'value': 'weight'}
+transform_descriptions['KR'] = {'name': 'KR', 'value': 'KR'}
+transform_descriptions['VC'] = {'name': 'VC', 'value': 'VC'}
+transform_descriptions['VC_SQRT'] = {'name': 'VC_SQRT', 'value': 'VC_SQRT'}
+
 TILE_SIZE = 256
 
 def abs_coord_2_bin(c, abs_pos, chroms, chrom_cum_lengths, chrom_sizes):
@@ -518,8 +524,11 @@ def format_cooler_tile(tile_data_array):
 
     tile_data = {}
 
-    min_dense = float(np.nanmin(tile_data_array))
-    max_dense = float(np.nanmax(tile_data_array))
+    with np.warnings.catch_warnings():
+        np.warnings.filterwarnings('ignore', r'All-NaN (slice|axis) encountered')
+
+        min_dense = float(np.nanmin(tile_data_array))
+        max_dense = float(np.nanmax(tile_data_array))
 
     tile_data["min_value"] = min_dense if not np.isnan(min_dense) else "NaN"
     tile_data["max_value"] = max_dense if not np.isnan(max_dense) else "NaN"

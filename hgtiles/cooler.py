@@ -5,6 +5,7 @@ import hgtiles.utils as hgut
 import h5py
 import itertools as it
 import numpy as np
+import pandas as pd
 
 global mats
 mats = {}
@@ -29,7 +30,7 @@ def abs_coord_2_bin(c, abs_pos, chroms, chrom_cum_lengths, chrom_sizes):
  
     chrom = chroms[chr_id]
     rel_pos = abs_pos - chrom_cum_lengths[chr_id]
- 
+
     return c.offset((chrom, rel_pos, chrom_sizes[chrom]))
 
 
@@ -51,7 +52,7 @@ def get_chromosome_names_cumul_lengths(c):
     return chrom_names, chrom_sizes, chrom_cum_lengths
  
  
-def get_data(f, start_pos_1, end_pos_1, start_pos_2, end_pos_2, transform='default'):
+def get_data(f, start_pos_1, end_pos_1, start_pos_2, end_pos_2, transform='default', resolution=None):
     """Get balanced pixel data.
  
     Args:
@@ -76,27 +77,31 @@ def get_data(f, start_pos_1, end_pos_1, start_pos_2, end_pos_2, transform='defau
     j0 = abs_coord_2_bin(c, start_pos_2, chroms, chrom_cum_lengths, chrom_sizes)
     j1 = abs_coord_2_bin(c, end_pos_2, chroms, chrom_cum_lengths, chrom_sizes)
 
-    '''
-    print('i', i0, i1)
-    print('j', j0, j1)
-    '''
     matrix = c.matrix(as_pixels=True, balance=False, max_chunk=np.inf)
 
     if i0 >= matrix.shape[0] or j0 >= matrix.shape[1]:
         # query beyond the bounds of the matrix
         # return an empty matrix
-        i0,i1,i1,j1 = 0,0,0,0
+        i0,i1,j0,j1 = 0,0,0,0
+
+        return (pd.DataFrame(columns=['genome_start1', 'genome_start2', 'balanced']), 
+                (pd.DataFrame({'genome_start': [],
+                               'genome_end': [],
+                               'weight': []}),
+                pd.DataFrame({'genome_start': [],
+                               'genome_end': [],
+                               'weight': []})))
     else:
         # limit the range of the query to be within bounds
         i1 = min(i1, matrix.shape[0]-1)
         j1 = min(j1, matrix.shape[1]-1)
 
-    #print("size", matrix.shape)
+    pixels = matrix[i0:i1+1, j0:j1+1]
 
-    pixels = matrix[i0:i1, j0:j1]
-
+    '''
     if not len(pixels):
-        return pd.DataFrame(columns=['genome_start1', 'genome_start2', 'balanced'])
+        return (pd.DataFrame(columns=['genome_start1', 'genome_start2', 'balanced']), (None, None))
+    '''
  
     # select bin columns to extract
     cols = ['chrom', 'start', 'end']
@@ -107,8 +112,19 @@ def get_data(f, start_pos_1, end_pos_1, start_pos_2, end_pos_2, transform='defau
 
     bins = c.bins(convert_enum=False)[cols]    
     pixels = cooler.annotate(pixels, bins)
+
     pixels['genome_start1'] = chrom_cum_lengths[pixels['chrom1']] + pixels['start1']
     pixels['genome_start2'] = chrom_cum_lengths[pixels['chrom2']] + pixels['start2']
+
+    bins1 = bins[i0:i1+1]
+    bins2 = bins[j0:j1+1]
+
+
+    bins1['genome_start'] = chrom_cum_lengths[bins1['chrom']] + bins1['start']
+    bins2['genome_start'] = chrom_cum_lengths[bins2['chrom']] + bins2['start']
+
+    bins1['genome_end'] = chrom_cum_lengths[bins1['chrom']] + bins1['end']
+    bins2['genome_end'] = chrom_cum_lengths[bins2['chrom']] + bins2['end']
 
     # apply transform
     if (transform == 'default' and 'weight' in c.bins()) or transform == 'weight':
@@ -116,16 +132,16 @@ def get_data(f, start_pos_1, end_pos_1, start_pos_2, end_pos_2, transform='defau
             pixels['count'] * pixels['weight1'] * pixels['weight2']
         )
 
-        weight1 = bins['weight'][i0:i1].values
-        weight2 = bins['weight'][j0:j1].values
-        return (pixels[['genome_start1', 'genome_start2', 'balanced']], (weight1, weight2))
+        return (pixels[['genome_start1', 'genome_start2', 'balanced']], (bins1, bins2))
     elif transform in ('KR', 'VC', 'VC_SQRT'):
         pixels['balanced'] = (
             pixels['count'] / pixels[transform+'1'] / pixels[transform+'2']
         )
-        weight1 = bins[transform][i0:i1].values
-        weight2 = bins[transform][j0:j1].values
-        return (pixels[['genome_start1', 'genome_start2', 'balanced']], (weight1, weight2))
+
+        bins1['weight'] = bins1[transform]
+        bins2['weight'] = bins2[transform]
+
+        return (pixels[['genome_start1', 'genome_start2', 'balanced']], (bins1, bins2))
     else:
         return (pixels[['genome_start1', 'genome_start2', 'count']], (None, None))
 
@@ -251,11 +267,16 @@ def make_tiles(hdf_for_resolution, resolution, x_pos, y_pos, transform_type='def
     print('start1:', start1, end1)
     print('start2:', start2, end2)
     '''
+    c = cooler.Cooler(hdf_for_resolution)
+    (chroms, chrom_sizes, chrom_cum_lengths) = get_chromosome_names_cumul_lengths(c)
 
-    (data, (weight1, weight2)) = get_data(
-        hdf_for_resolution, start1, end1 - 1, start2, end2 - 1, 
-        transform_type
+    total_length = sum(chrom_sizes.values())
+
+    (data, (bins1, bins2)) = get_data(
+        hdf_for_resolution, start1, end1 - 1, start2, end2- 1, 
+        transform_type, resolution=resolution
     )
+
 
     #print('start1', start1, 'end1', end1, 'weight', len(weight1), 'end1 - start1 / tile_size', (end1 - start1) / resolution)
 
@@ -275,9 +296,9 @@ def make_tiles(hdf_for_resolution, resolution, x_pos, y_pos, transform_type='def
             end2 = (y_pos + y_offset + 1) * tile_size
 
             i0 = x_offset * BINS_PER_TILE
-            i1 = i0 + BINS_PER_TILE
+            i1 = i0 + BINS_PER_TILE + 1
             j0 = y_offset * BINS_PER_TILE
-            j1 = j0 + BINS_PER_TILE
+            j1 = j0 + BINS_PER_TILE + 1
 
             '''
             print("resolution:", resolution)
@@ -286,7 +307,6 @@ def make_tiles(hdf_for_resolution, resolution, x_pos, y_pos, transform_type='def
             print("start1", start1, 'end1', end1)
             print("start2", start2, 'end2', end2)
             '''
-
             df = data[data['genome_start1'] >= start1]
             df = df[df['genome_start1'] < end1]
 
@@ -304,20 +324,35 @@ def make_tiles(hdf_for_resolution, resolution, x_pos, y_pos, transform_type='def
                 v = np.nan_to_num(df['count'].values)
 
             out = np.zeros((256, 256), dtype=np.float32)
-            # print("i:", i)
             out[i, j] = v
 
-            #print('weight1:', len(weight1))
-            if weight1 is not None and weight2 is not None:
-                isnan1 = np.array(list(np.isnan(weight1[i0:i1])) + [True] * (BINS_PER_TILE - len(weight1[i0:i1])))
-                isnan2 = np.array(list(np.isnan(weight2[j0:j1])) + [True] * (BINS_PER_TILE - len(weight2[j0:j1])))
+            if bins1 is not None and bins2 is not None:
+                sub_bins1 = bins1[bins1['genome_start'] >= start1]
+                sub_bins2 = bins2[bins2['genome_start'] >= start2]
 
-                #isnan1 = np.concatenate(isnan1, np.zeros(BINS_PER_TILE-len(isnan1)))
-                #isnan2 = np.concatenate(isnan2, np.array([False
+                sub_bins1 = sub_bins1[sub_bins1['genome_start'] < end1]
+                sub_bins2 = sub_bins2[sub_bins2['genome_start'] < end2]
 
-                out[:,isnan1-1] = np.nan
-                out[isnan2-1,:] = np.nan
+                nan_bins1 = sub_bins1[np.isnan(sub_bins1['weight'])]
+                nan_bins2 = sub_bins2[np.isnan(sub_bins2['weight'])]
 
+                bi = ((nan_bins1['genome_start'].values - start1) // binsize).astype(int)
+                bj = ((nan_bins2['genome_start'].values - start2) // binsize).astype(int)
+
+                bend1 = ((np.array(range(total_length, int(end1), int(resolution))) - start1) // binsize).astype(int)
+                bend2 = ((np.array(range(total_length, int(end2), int(resolution))) - start2) // binsize).astype(int)
+
+                bend1 = bend1[bend1 >= 0]
+                bend2 = bend2[bend2 >= 0]
+
+                out[:, bi] = np.nan
+                out[bj,:] = np.nan
+
+                out[:, bend1] = np.nan
+                out[bend2, :] = np.nan
+
+            #print('sum(isnan1)', isnan1-1)
+            #print('out.ravel()', sum(np.isnan(out.ravel())), len(out.ravel()))
             data_by_tilepos[(x_pos + x_offset, y_pos + y_offset)] = out.ravel()
 
     return data_by_tilepos
@@ -486,8 +521,8 @@ def format_cooler_tile(tile_data_array):
     min_dense = float(np.nanmin(tile_data_array))
     max_dense = float(np.nanmax(tile_data_array))
 
-    tile_data["min_value"] = min_dense
-    tile_data["max_value"] = max_dense
+    tile_data["min_value"] = min_dense if not np.isnan(min_dense) else "NaN"
+    tile_data["max_value"] = max_dense if not np.isnan(max_dense) else "NaN"
 
     min_f16 = np.finfo('float16').min
     max_f16 = np.finfo('float16').max

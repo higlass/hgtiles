@@ -4,4 +4,4 @@
 *.egg-info/
 __pycache__
 dist
-test_data/
+data/

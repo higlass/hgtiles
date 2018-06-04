@@ -55,3 +55,33 @@ def partition_by_adjacent_tiles(tile_ids, dimension=2):
             tile_id_lists += [[tile_id]]
 
     return tile_id_lists
+
+def infer_filetype(filename):
+    _,ext = op.splitext(filename)
+
+    if ext.lower() == '.bw' or ext.lower() == '.bigwig':
+        return 'bigwig'
+    elif ext.lower() == '.mcool' or ext.lower() == '.cool':
+        return 'cooler'
+    elif ext.lower() == '.htime':
+        return 'time-interval-json'
+    elif ext.lower() == '.hitile':
+        return 'hitile'
+    elif ext.lower() == '.beddb':
+        return 'beddb'
+    elif ext.lower() == '.mv5':
+        return 'multivec'
+
+    return None
+
+def infer_datatype(filetype):
+    if filetype == 'cooler':
+        return 'matrix'
+    if filetype == 'bigwig':
+        return 'vector'
+    if filetype == 'time-interval-json':
+        return 'time-interval'
+    if filetype == 'hitile':
+        return 'vector'
+    if filetype == 'bedfile'
+        return 'bedlike'

@@ -1,3 +1,5 @@
+import os.path as op
+
 def partition_by_adjacent_tiles(tile_ids, dimension=2):
     '''
     Partition a set of tile ids into sets of adjacent tiles
@@ -83,5 +85,5 @@ def infer_datatype(filetype):
         return 'time-interval'
     if filetype == 'hitile':
         return 'vector'
-    if filetype == 'bedfile'
+    if filetype == 'beddb':
         return 'bedlike'

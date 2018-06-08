@@ -22,7 +22,7 @@ def get_2d_tileset_info(db_file):
 
     return tileset_info
 
-def get_1D_tiles(db_file, zoom, tile_x_pos, numx=1, numy=1):
+def get_1D_tiles(db_file, tile_ids):
     '''
     Retrieve a contiguous set of tiles from a 2D db tile file.
 

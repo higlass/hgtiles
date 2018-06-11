@@ -7,8 +7,8 @@ def test_bedarcsdb_tiles():
     '''
     filename = op.join('data', 'arrowhead_domains_short.txt.multires.db')
 
-    pos = 1
-    data = hgbad.tiles(filename, "b.13.{}".format(pos))
-    print('data_1d:', len(data[pos]))
+    pos = 0
+    data = hgbad.tiles(filename, ["b.0.{}".format(pos)])
+    print('data:', data)
 
     pass

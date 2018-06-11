@@ -1,3 +1,6 @@
+import collections as col
+import sqlite3
+
 def tiles(filepath, tile_ids):
     '''
     Generate tiles from this dataset.
@@ -11,10 +14,10 @@ def tiles(filepath, tile_ids):
 
     Returns
     -------
-    tiles: {pos: tile_value}
+    tiles: [(tile_id, tile_value),...]
         A list of values indexed by the tile position
     '''
-    new_obj = {}
+    to_return = []
 
     for  tile_id in tile_ids:
         parts = tile_id.split('.')
@@ -22,7 +25,9 @@ def tiles(filepath, tile_ids):
         zoom = int(parts[1])
         xpos = int(parts[2])
 
-    pass
+        to_return += [(tile_id, get_1D_tiles(filepath, zoom, xpos))]
+
+    return to_return
 
 def get_1D_tiles(db_file, zoom, tile_x_pos, numx=1, numy=1):
     '''
@@ -54,8 +59,6 @@ def get_1D_tiles(db_file, zoom, tile_x_pos, numx=1, numy=1):
     tile_x_start_pos = tile_width * tile_x_pos
     tile_x_end_pos = tile_x_start_pos + (numx * tile_width)
 
-    print('tile_x_start:', tile_x_start_pos, tile_x_end_pos)
-
     query = '''
     SELECT fromX, toX, fromY, toY, chrOffset, importance, fields, uid
     FROM intervals,position_index
@@ -73,7 +76,6 @@ def get_1D_tiles(db_file, zoom, tile_x_pos, numx=1, numy=1):
     rows = c.execute(query).fetchall()
 
     new_rows = col.defaultdict(list)
-    print("len(rows)", len(rows))
 
     for r in rows:
         try:
@@ -107,3 +109,24 @@ def get_1D_tiles(db_file, zoom, tile_x_pos, numx=1, numy=1):
     conn.close()
 
     return new_rows
+
+def get_2d_tileset_info(db_file):
+    conn = sqlite3.connect(db_file)
+    c = conn.cursor()
+
+    row = c.execute("SELECT * from tileset_info").fetchone()
+    tileset_info = {
+        'zoom_step': row[0],
+        'max_length': row[1],
+        'assembly': row[2],
+        'chrom_names': row[3],
+        'chrom_sizes': row[4],
+        'tile_size': row[5],
+        'max_zoom': row[6],
+        'max_width': row[7],
+        'min_pos': [1, 1],
+        'max_pos': [row[1], row[1]]
+    }
+    conn.close()
+
+    return tileset_info

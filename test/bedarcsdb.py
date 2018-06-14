@@ -29,6 +29,7 @@ def test_bedarcsdb_tiles():
 
     for i,d in enumerate(data[0][1][10]):
         chr1,chr2 = sorted([d['fields'][0], d['fields'][3]])
+        #print('d:', d)
 
         counts[(chr1,chr2)] += 1
     print('counts:', counts)

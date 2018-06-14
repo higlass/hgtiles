@@ -67,7 +67,7 @@ def get_1D_tiles(db_file, zoom, tile_x_pos, numx=1, numy=1):
         intervals.id=position_index.id AND
         zoomLevel <= {} AND
         rToX >= {} AND
-        rFromX <= {}
+        rFromX <= {} ORDER BY importance
     '''.format(
         zoom,
         tile_x_start_pos,
@@ -83,7 +83,7 @@ def get_1D_tiles(db_file, zoom, tile_x_pos, numx=1, numy=1):
         intervals.id=position_index.id AND
         zoomLevel <= {} AND
         rToY >= {} AND
-        rFromY <= {}
+        rFromY <= {} ORDER BY importance
     '''.format(
         zoom,
         tile_x_start_pos,
@@ -92,13 +92,15 @@ def get_1D_tiles(db_file, zoom, tile_x_pos, numx=1, numy=1):
 
     rows1 = c.execute(query1).fetchall()
 
-    print('tile_x_start_pos', tile_x_start_pos, tile_x_end_pos)
-    print("len(rows)", len(rows))
+    #print('tile_x_start_pos', tile_x_start_pos, tile_x_end_pos)
+    #print("len(rows)", len(rows))
     seen_uids = set()
 
     new_rows = col.defaultdict(list)
 
-    for r in it.chain(rows, rows1):
+
+    MAX_ROWS=100
+    for r in sorted(it.chain(rows, rows1), key=lambda x: x[5]):
         try:
             uid = r[7].decode('utf-8')
         except AttributeError:
@@ -108,6 +110,8 @@ def get_1D_tiles(db_file, zoom, tile_x_pos, numx=1, numy=1):
             continue
 
         seen_uids.add(uid)
+        if len(seen_uids) > MAX_ROWS:
+            break
 
         x_start = r[0]
         x_end = r[1]

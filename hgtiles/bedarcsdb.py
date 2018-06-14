@@ -1,4 +1,5 @@
 import collections as col
+import itertools as it
 import sqlite3
 
 def tiles(filepath, tile_ids):
@@ -75,13 +76,38 @@ def get_1D_tiles(db_file, zoom, tile_x_pos, numx=1, numy=1):
 
     rows = c.execute(query).fetchall()
 
+    query1 = '''
+    SELECT fromX, toX, fromY, toY, chrOffset, importance, fields, uid
+    FROM intervals,position_index
+    WHERE
+        intervals.id=position_index.id AND
+        zoomLevel <= {} AND
+        rToY >= {} AND
+        rFromY <= {}
+    '''.format(
+        zoom,
+        tile_x_start_pos,
+        tile_x_end_pos,
+    )
+
+    rows1 = c.execute(query1).fetchall()
+
+    print('tile_x_start_pos', tile_x_start_pos, tile_x_end_pos)
+    print("len(rows)", len(rows))
+    seen_uids = set()
+
     new_rows = col.defaultdict(list)
 
-    for r in rows:
+    for r in it.chain(rows, rows1):
         try:
             uid = r[7].decode('utf-8')
         except AttributeError:
             uid = r[7]
+
+        if uid in seen_uids:
+            continue
+
+        seen_uids.add(uid)
 
         x_start = r[0]
         x_end = r[1]
@@ -93,8 +119,10 @@ def get_1D_tiles(db_file, zoom, tile_x_pos, numx=1, numy=1):
             tile_x_end = (i+1) * tile_width
 
             if (
-                x_start < tile_x_end and
-                x_end >= tile_x_start
+                (x_start < tile_x_end and
+                x_end >= tile_x_start) or 
+                (y_start < tile_x_end and
+                    y_end >= tile_x_start)
             ):
                 # add the position offset to the returned values
                 new_rows[i] += [

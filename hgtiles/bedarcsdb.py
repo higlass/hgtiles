@@ -26,9 +26,23 @@ def tiles(filepath, tile_ids):
         zoom = int(parts[1])
         xpos = int(parts[2])
 
-        to_return += [(tile_id, get_1D_tiles(filepath, zoom, xpos))]
+        extra_zoom = 3
+        new_rows = {}
+        new_rows[xpos] = []
+
+        for j in range(2 ** extra_zoom):
+            # the old rows are indexed by the higher
+            # resolution tile numbers
+            higher_xpos = 2 ** extra_zoom * xpos + j
+            old_rows = get_1D_tiles(filepath, 
+                    zoom + extra_zoom, 
+                    higher_xpos)
+            new_rows[xpos] += old_rows[higher_xpos]
+                
+        to_return += [(tile_id, new_rows)]
 
     return to_return
+
 
 def get_1D_tiles(db_file, zoom, tile_x_pos, numx=1, numy=1):
     '''
@@ -92,15 +106,16 @@ def get_1D_tiles(db_file, zoom, tile_x_pos, numx=1, numy=1):
 
     rows1 = c.execute(query1).fetchall()
 
-    #print('tile_x_start_pos', tile_x_start_pos, tile_x_end_pos)
-    #print("len(rows)", len(rows))
     seen_uids = set()
 
     new_rows = col.defaultdict(list)
+    all_rows = list(sorted(it.chain(rows, rows1), key=lambda x: -x[5]))
+    # print("total_len", len(all_rows))
 
-
-    MAX_ROWS=100
-    for r in sorted(it.chain(rows, rows1), key=lambda x: x[5]):
+    MAX_ROWS=25
+    for r in all_rows:
+        # fields = r[6].split('\t')
+        #print('fields', sorted([fields[0], fields[3]]), r[5])
         try:
             uid = r[7].decode('utf-8')
         except AttributeError:

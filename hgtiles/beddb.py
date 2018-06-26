@@ -2,7 +2,7 @@ import collections as col
 import math
 import sqlite3
 
-def get_tileset_info(db_file):
+def tileset_info(db_file):
     conn = sqlite3.connect(db_file)
     c = conn.cursor()
 
@@ -12,7 +12,7 @@ def get_tileset_info(db_file):
     else:
         header = ""
 
-    tileset_info = {
+    ts_info = {
             'zoom_step': row[0],
             'max_length': row[1],
             'assembly': row[2],
@@ -27,7 +27,7 @@ def get_tileset_info(db_file):
             }
     conn.close()
 
-    return tileset_info
+    return ts_info
 
 def tiles(filepath, tile_ids):
     '''
@@ -91,12 +91,12 @@ def get_1D_tiles(db_file, zoom, tile_x_pos, num_tiles=1):
     tiles: {pos: tile_value}
         A set of tiles, indexed by position
     '''
-    tileset_info = get_tileset_info(db_file)
+    ts_info = tileset_info(db_file)
     conn = sqlite3.connect(db_file)
 
     c = conn.cursor()
 
-    tile_width = tileset_info['max_width'] / 2 ** zoom
+    tile_width = ts_info['max_width'] / 2 ** zoom
 
     tile_start_pos = tile_width * tile_x_pos
     tile_end_pos = tile_start_pos + num_tiles * tile_width

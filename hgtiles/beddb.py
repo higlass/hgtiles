@@ -48,7 +48,10 @@ def tiles(filepath, tile_ids):
     to_return = []
 
     for  tile_id in tile_ids:
-        parts = tile_id.split('.')
+        tile_option_parts = tile_id.split('|')[1:]
+        tile_no_options = tile_id.split('|')[0]
+        parts = tile_no_options.split('.')
+
         uuid = parts[0]
         zoom = int(parts[1])
         xpos = int(parts[2])

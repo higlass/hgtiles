@@ -1,3 +1,7 @@
+v0.2.9
+
+- Return internal db id for geo json annotations
+
 v0.2.0
 
 - Introduced NaN values in cooler data

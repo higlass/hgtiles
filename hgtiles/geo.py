@@ -114,9 +114,10 @@ def get_tiles(db_file, zoom, x, y, width=1, height=1):
     # min/max for latitude are flipped (max == from lat; min == to lat)
     query = '''
     SELECT
-        minLng, maxLng, maxLat, minLat, uid, importance, geometry, properties
+        minLng, maxLng, maxLat, minLat, uid, importance, geometry, properties,
+        intervals.id
     FROM
-        intervals,position_index
+        intervals, position_index
     WHERE
         intervals.id=position_index.id AND
         zoomLevel <= ? AND
@@ -138,6 +139,10 @@ def get_tiles(db_file, zoom, x, y, width=1, height=1):
             uid = r[4].decode('utf-8')
         except AttributeError:
             uid = r[4]
+        try:
+            id = r[8].decode('utf-8')
+        except AttributeError:
+            id = r[8]
 
         x_start, y_start = get_tile_pos_from_lng_lat(r[0], r[2], zoom)
         x_end, y_end = get_tile_pos_from_lng_lat(r[1], r[3], zoom)
@@ -173,6 +178,7 @@ def get_tiles(db_file, zoom, x, y, width=1, height=1):
                         'uid': uid,
                         'geometry': geometry,
                         'properties': properties,
+                        'id': id,
                     }]
     conn.close()
 

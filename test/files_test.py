@@ -9,3 +9,4 @@ def test_infer_filetype():
 def test_infer_datatype():
     assert(hgfi.infer_datatype('cooler') == 'matrix')
     assert(hgfi.infer_datatype('bigwig') == 'vector')
+

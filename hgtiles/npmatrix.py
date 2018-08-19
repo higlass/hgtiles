@@ -82,20 +82,21 @@ def tiles(grid, z, x, y, nan_grid=None, bin_size=256):
     max_dim = max(grid.shape)
     #print("max_dim", max_dim)
     
-    max_zoom = math.ceil(math.log(max_dim / bin_size) / math.log(2))
+    max_zoom = max(0, math.ceil(math.log(max_dim / bin_size) / math.log(2)))
     max_width = 2 ** max_zoom * bin_size
     
-    #print("max_width:", max_width)
+    # print("max_width:", max_width, 'bin_size:', bin_size, 'max_zoom', max_zoom)
     
     tile_width = 2 ** (max_zoom - z) * bin_size
-    #print("tile_width", tile_width)
+
     x_start = x * tile_width
     y_start = y * tile_width
     
     x_end = min(grid.shape[0], x_start + tile_width)
     y_end = min(grid.shape[1], y_start + tile_width)
-    
-    #print("x_start:", x_start, x_end)
+
+    # print("tile_width", tile_width)
+    # print("x_start:", x_start, x_end)
     # print("y_start:", y_start, y_end)
     
     num_to_sum = 2 ** (max_zoom - z)
@@ -112,8 +113,12 @@ def tiles(grid, z, x, y, nan_grid=None, bin_size=256):
     divisible_y_pad = divisible_y_width - data.shape[1]
     #print("data.shape", data.shape)
     
+    print("divisible_x_pad:", divisible_x_pad)
+    print("divisible_y_pad:", divisible_y_pad)
+    
     a = np.pad(data, ((0, divisible_x_pad),(0,divisible_y_pad)), 'constant', 
             constant_values=(np.nan,np.nan))
+
     b = np.nansum(a.reshape((a.shape[0],-1,num_to_sum)),axis=2)
     ret_array = np.nansum(b.T.reshape(b.shape[1],-1,num_to_sum),axis=2).T    
     ret_array[ret_array == 0.] = np.nan

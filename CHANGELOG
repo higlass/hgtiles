@@ -1,6 +1,9 @@
 v0.2.9
 
 - Return internal db id for geo json annotations
+- Added support for npmatrix
+- Added support for inferring filetypes
+- Added tests
 
 v0.2.0
 

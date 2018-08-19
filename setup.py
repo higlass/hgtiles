@@ -2,7 +2,7 @@ from setuptools import setup
 
 setup(
     name='hgtiles',
-    version='0.2.9',
+    version='0.2.8',
     description='Tile loading for higlass-server',
     author='Peter Kerpedjiev',
     author_email='pkerpedjiev@gmail.com',

@@ -110,8 +110,8 @@ def tiles(array, z, x, nan_array=None, bin_size=1024):
             constant_values=(np.nan,))
 
     b = np.nansum(a.reshape((a.shape[0],-1,num_to_sum)),axis=2)
-    ret_array = np.nansum(b.reshape(-1,num_to_sum),axis=1)
-    print('ret_array:', ret_array == 0.)
+    ret_array = np.nansum(b.reshape(-1,num_to_sum),axis=1).astype(float)
+    print('ret_array:', ret_array)
     ret_array[ret_array == 0.] = np.nan
     #print('ret_array:', ret_array)
 

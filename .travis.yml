@@ -24,6 +24,7 @@ install:
   - conda install --yes python=$TRAVIS_PYTHON_VERSION cython==0.26 numpy=1.13.1
   - pip install nose
   - pip install -r requirements.txt
+  - ./get_test_data.sh
 
 script:
   - nosetests test 

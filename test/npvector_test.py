@@ -7,5 +7,4 @@ def test_npvector():
     assert('max_width' in hgnv.tileset_info(array))
 
     tile = hgnv.tiles(array, 0, 0)
-    print('tile:', tile)
 

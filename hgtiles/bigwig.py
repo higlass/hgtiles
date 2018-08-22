@@ -219,32 +219,7 @@ def tiles(bwpath, tile_ids, chromsizes_map={}):
         end_pos = start_pos + tile_size
         dense = get_bigwig_tile(bwpath, zoom_level, start_pos, end_pos, chromsizes)
 
-        if len(dense):
-            max_dense = max(dense)
-            min_dense = min(dense)
-        else:
-            max_dense = 0
-            min_dense = 0
-
-        min_f16 = np.finfo('float16').min
-        max_f16 = np.finfo('float16').max
-
-        has_nan = len([d for d in dense if np.isnan(d)]) > 0
-
-        if (
-            not has_nan and
-            max_dense > min_f16 and max_dense < max_f16 and
-            min_dense > min_f16 and min_dense < max_f16
-        ):
-            tile_value = {
-                'dense': base64.b64encode(dense.astype('float16')).decode('utf-8'),
-                'dtype': 'float16'
-            }
-        else:
-            tile_value = {
-                'dense': base64.b64encode(dense.astype('float32')).decode('utf-8'),
-                'dtype': 'float32'
-            }
+        tile_value = hgfo.format_dense_tile(dense)
 
         generated_tiles += [(tile_id, tile_value)]
     return generated_tiles

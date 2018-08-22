@@ -512,48 +512,6 @@ def tileset_info(filepath):
 
         return info
 
-def format_cooler_tile(tile_data_array):
-    '''
-    Format raw cooler cooler data into a more structured tile
-    containing either float16 or float32 data along with a 
-    dtype to differentiate between the two.
-    Parameters
-    ----------
-    tile_data_array: np.array
-        An array containing a flattened 256x256 chunk of data
-    Returns
-    -------
-    tile_data: {'dense': str, 'dtype': str}
-        The tile data reformatted to use float16 or float32 as the
-        datatype. The dtype indicates which format is chosen.
-    '''
-
-    tile_data = {}
-
-    with np.warnings.catch_warnings():
-        np.warnings.filterwarnings('ignore', r'All-NaN (slice|axis) encountered')
-
-        min_dense = float(np.nanmin(tile_data_array))
-        max_dense = float(np.nanmax(tile_data_array))
-
-    tile_data["min_value"] = min_dense if not np.isnan(min_dense) else "NaN"
-    tile_data["max_value"] = max_dense if not np.isnan(max_dense) else "NaN"
-
-    min_f16 = np.finfo('float16').min
-    max_f16 = np.finfo('float16').max
-
-    if (
-        max_dense > min_f16 and max_dense < max_f16 and
-        min_dense > min_f16 and min_dense < max_f16
-    ):
-        tile_data['dense'] = base64.b64encode(tile_data_array.astype('float16')).decode('latin-1')
-        tile_data['dtype'] = 'float16'
-    else:
-        tile_data['dense'] = base64.b64encode(tile_data_array.astype('float32')).decode('latin-1')
-        tile_data['dtype'] = 'float32'
-
-    return tile_data
-
 def add_transform_type(tile_id):
     '''
     Add a transform type to a cooler tile id if it's not already
@@ -674,7 +632,7 @@ def generate_tiles(filepath, tile_ids):
                 transform_type,
                 maxx-minx+1, maxy-miny+1)
 
-        tiles = [(".".join(map(str, [tileset_id] + [zoom_level] + list(position) + [transform_type])), format_cooler_tile(tile_data))
+        tiles = [(".".join(map(str, [tileset_id] + [zoom_level] + list(position) + [transform_type])), format_dense_tile(tile_data))
                 for (position, tile_data) in tile_data_by_position.items()]
 
 

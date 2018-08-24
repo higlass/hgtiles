@@ -9,3 +9,5 @@ def test_cooler_info():
 
     filename = op.join('data', 'hic-resolutions.cool')
     print(hgco.tileset_info(filename))
+
+    hgco.tiles(filename, ['x.0.0.0'])

@@ -1,6 +1,7 @@
 import base64
 import collections as col
 import cooler
+import hgtiles.format as hgfo
 import hgtiles.utils as hgut
 import h5py
 import itertools as it
@@ -632,7 +633,8 @@ def generate_tiles(filepath, tile_ids):
                 transform_type,
                 maxx-minx+1, maxy-miny+1)
 
-        tiles = [(".".join(map(str, [tileset_id] + [zoom_level] + list(position) + [transform_type])), format_dense_tile(tile_data))
+        tiles = [(".".join(map(str, [tileset_id] + [zoom_level] + list(position) + [transform_type])), 
+            hgfo.format_dense_tile(tile_data))
                 for (position, tile_data) in tile_data_by_position.items()]
 
 

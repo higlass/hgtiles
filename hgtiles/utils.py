@@ -87,3 +87,20 @@ def infer_datatype(filetype):
         return 'vector'
     if filetype == 'beddb':
         return 'bedlike'
+
+def tiles_wrapper_2d(filepath, tile_ids, tiles_function):
+    tile_values = []
+
+    for tile_id in tile_ids:
+        parts = tile_id.split('.')
+
+        if len(parts) < 4:
+            raise IndexError("Not enough tile info present")
+
+        uid = parts[0]
+        z,x,y = map(int, [parts[1], parts[2], parts[3]])
+
+        tile_values +=  [(tile_id, 
+                          tiles_function(filepath, z, x, y))]
+
+    return tile_values

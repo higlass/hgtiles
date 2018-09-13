@@ -1,5 +1,4 @@
 import base64
-import clodius.hdf_tiles as hdft
 import h5py
 import math
 import numpy as np

@@ -2,7 +2,10 @@ import os.path as op
 
 def partition_by_adjacent_tiles(tile_ids, dimension=2):
     '''
-    Partition a set of tile ids into sets of adjacent tiles
+    Partition a set of tile ids into sets of adjacent tiles. For example,
+    if we're requesting a set of four tiles that form a rectangle, then
+    those four tiles will become one set of adjacent tiles. Non-contiguous
+    tiles are not grouped together.
 
     Parameters
     ----------
@@ -104,3 +107,10 @@ def tiles_wrapper_2d(filepath, tile_ids, tiles_function):
                           tiles_function(filepath, z, x, y))]
 
     return tile_values
+
+def random_tile(function):
+        zoom_level = random.randint(0,10)
+        x_pos = random.randint(0, 2 ** zoom_level)
+        y_pos = random.randint(0, 2 ** zoom_level)
+            
+        function(hg_points, zoom_level, x_pos, y_pos)

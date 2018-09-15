@@ -4,7 +4,6 @@ import pandas as pd
 import numpy as np
 import pandas as pd
 import h5py
-import hgtiles.density as hgde
 
 def csv_to_points(csv_file, output_file):
     '''

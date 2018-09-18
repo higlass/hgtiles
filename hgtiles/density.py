@@ -63,7 +63,7 @@ def tileset_info(points_file):
         
         return {
             'min_pos': [float(dset.attrs['min_x']), float(dset.attrs['min_y'])],
-            'max_pos': [float(dset.attrs['min_y']), float(dset.attrs['max_y'])],
+            'max_pos': [float(dset.attrs['max_y']), float(dset.attrs['max_y'])],
             'max_width': float(dset.attrs['max_width']),
             'max_zoom': int(dset.attrs['max_zoom']),
             'mirror_tiles': 'false'

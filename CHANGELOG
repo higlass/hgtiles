@@ -1,3 +1,7 @@
+v0.2.11
+
+- Updated the dependencies and added them to install_requires
+
 v0.2.9
 
 - Return internal db id for geo json annotations

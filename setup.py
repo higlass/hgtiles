@@ -7,8 +7,9 @@ install_requires = [
     'h5py',
     'pandas',
     'slugid',
+    'scipy',
     'cooler',
-    'pybbi==0.1.1'
+    'pybbi==0.1.3'
 ]
 
 setup(
@@ -19,8 +20,5 @@ setup(
     author_email='pkerpedjiev@gmail.com',
     url='',
     install_requires=install_requires,
-    dependency_links=[
-        'git+ssh://git@github.com/nvictus/pybbi.git@v0.1.1#egg=pybbi-0.1.1'
-    ],
-    packages=['hgtiles'],
+    packages=['hgtiles']
 )

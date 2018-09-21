@@ -72,7 +72,6 @@ def get_chromsizes(bwpath):
     """
     chromsizes = bbi.chromsizes(bwpath)
     chromosomes = natsorted(chromsizes.keys())
-    print("chromosomes", chromosomes)
     chrom_series = pd.Series(chromsizes)[chromosomes]
     return chrom_series
 
@@ -124,9 +123,7 @@ def tileset_info(bwpath):
 def get_bigwig_tile(bwpath, zoom_level, start_pos, end_pos, chromsizes=None):
     t1 = time.time()
     if chromsizes is None:
-        print("here")
         chromsizes = get_chromsizes(bwpath)
-    print('chromsizes:', chromsizes)
     t2 = time.time()
 
     # print("chromosomes time:", t2 - t1)
@@ -146,8 +143,10 @@ def get_bigwig_tile(bwpath, zoom_level, start_pos, end_pos, chromsizes=None):
                           bins=n_bins, missing=np.nan)
             t2 = time.time()
 
+            '''
             if t2 - t1 > 0.5:
                 print("fetching:", chrom, start, end, n_bins, "fetched time: {:.2f}".format(time.time() - t1))
+            '''
 
             # drop the very last bin if it is smaller than the binsize
             if end == clen and clen % binsize != 0:
@@ -198,8 +197,6 @@ def tiles(bwpath, tile_ids, chromsizes_map={}):
         if 'cos' in tile_options:
             chromsizes_id = tile_options['cos']
 
-        print('chromsizes_id:', chromsizes_id)
-
         if chromsizes_id in chromsizes_map:
             chromsizes = chromsizes_map[chromsizes_id]
         else:
@@ -213,7 +210,6 @@ def tiles(bwpath, tile_ids, chromsizes_map={}):
         if chromsizes is None:
             chromsizes = get_chromsizes(bwpath)
 
-        print('chromsizes:', chromsizes)
         max_depth = get_quadtree_depth(chromsizes)
         tile_size = TILE_SIZE * 2 ** (max_depth - zoom_level)
         start_pos = tile_pos * tile_size

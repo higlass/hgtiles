@@ -1,7 +1,6 @@
 from setuptools import setup
 from setuptools.command.build_ext import build_ext as _build_ext
 
-
 install_requires = [
     'cython',
     'numpy',
@@ -12,6 +11,7 @@ install_requires = [
     'numpy',
     'scipy==1.0.1',
     'cooler',
+    'pybbi==0.1.3',
 ]
 
 setup(

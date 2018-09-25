@@ -489,6 +489,9 @@ def make_mats(filepath):
     info["max_zoom"] = int(info["max_zoom"])
     info["max_width"] = int(info["max_width"])
 
+    if 'symmetric' in f['0'].attrs and not f['0'].attrs['symmetric']:
+        info['mirror_tiles'] = 'false'
+
     if "transforms" in info:
         info["transforms"] = list(info["transforms"])
 

@@ -91,7 +91,7 @@ def infer_datatype(filetype):
     if filetype == 'beddb':
         return 'bedlike'
 
-def tiles_wrapper_2d(filepath, tile_ids, tiles_function):
+def tiles_wrapper_2d(tile_ids, tiles_function):
     tile_values = []
 
     for tile_id in tile_ids:
@@ -104,7 +104,7 @@ def tiles_wrapper_2d(filepath, tile_ids, tiles_function):
         z,x,y = map(int, [parts[1], parts[2], parts[3]])
 
         tile_values +=  [(tile_id, 
-                          tiles_function(filepath, z, x, y))]
+                          tiles_function(z, x, y))]
 
     return tile_values
 
@@ -114,3 +114,32 @@ def random_tile(function):
         y_pos = random.randint(0, 2 ** zoom_level)
             
         function(hg_points, zoom_level, x_pos, y_pos)
+
+def tile_bounds(tsinfo, z, x, y):
+    '''
+    Get the coordinate boundaries for the given tile.
+
+    Parameters:
+    -----------
+    tsinfo: { min_pos: [], max_pos [] }
+        Tileset info containing the bounds of the dataset
+    z: int
+        The zoom level
+    x: int
+        The x position
+    y: int
+        The y position
+    '''
+    min_pos = tsinfo['min_pos']
+    max_pos = tsinfo['max_pos']
+
+    max_width = max(max_pos[0] - min_pos[0], max_pos[1] - min_pos[1])
+    
+    tile_width = max_width / 2 ** z
+    from_x = min_pos[0] + x * tile_width
+    to_x = min_pos[0] + (x+1) * tile_width
+    
+    from_y = min_pos[1] + y * tile_width
+    to_y = min_pos[1] + (y+1) * tile_width    
+    
+    return [from_x, from_y, to_x, to_y]

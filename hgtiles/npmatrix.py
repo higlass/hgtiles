@@ -1,6 +1,6 @@
 import math
 import numpy as np
-import hgtiles.cooler as hgco
+import hgtiles.format as hgfo
 
 def tiles_wrapper(grid, tile_ids):
     tile_values = []
@@ -19,12 +19,12 @@ def tiles_wrapper(grid, tile_ids):
         ret_array = tiles(grid, z, x, y).reshape((-1))
         
         tile_values +=  [(tile_id, 
-                         hgco.format_dense_tile(ret_array))]
+                         hgfo.format_dense_tile(ret_array))]
 
     
     return tile_values
 
-def tileset_info(grid, bounds):
+def tileset_info(grid, bounds=None):
     '''
     Get the tileset info for the grid
     '''
@@ -39,7 +39,7 @@ def tileset_info(grid, bounds):
 
     scale_up = max_width / max_dim
 
-    if bounds:
+    if bounds is not None:
         min_pos = [bounds[0], bounds[1]]
         max_pos = [bounds[2], bounds[3]]
 

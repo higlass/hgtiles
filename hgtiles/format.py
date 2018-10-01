@@ -36,7 +36,8 @@ def format_dense_tile(data):
     min_f16 = np.finfo('float16').min
     max_f16 = np.finfo('float16').max
 
-    has_nan = len([d for d in data if np.isnan(d)]) > 0
+    #has_nan = len([d for d in data if np.isnan(d)]) > 0
+    has_nan = np.sum(np.isnan(data)) > 0
 
     if (
         not has_nan and

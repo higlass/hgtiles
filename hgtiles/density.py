@@ -18,8 +18,6 @@ def csv_to_points(csv_file, output_file):
     '''
     df = pd.read_table(csv_file, delimiter=',')
 
-    print("dataframe", df.head(), df.columns.values)
-    
     min_x = df['x'].min()
     max_x = df['x'].max()
     min_y = df['y'].min()
@@ -56,8 +54,6 @@ def tileset_info(points_file):
     '''
     Calculate the extent, etc...
     '''
-    print("points file:", points_file)
-
     with h5py.File(points_file, 'r') as f_in:
         dset = f_in['values']
         
@@ -69,7 +65,7 @@ def tileset_info(points_file):
             'mirror_tiles': 'false'
         }
 
-def tile_bounds(points_file, z, x, y):
+def tile_bounds(points_file, z, x, y, width=1, height=1):
     '''
     Get the boundaries of a tile
     
@@ -78,15 +74,14 @@ def tile_bounds(points_file, z, x, y):
     tileset_info: { min_pos, max_pos, max_width}
         Information about the bounds of this tileset
     '''
+
     tsinfo = tileset_info(points_file)
     tile_width = tsinfo['max_width'] / 2 ** z
-    print("tile_width:", tile_width)
-
         
     x_start = tsinfo['min_pos'][0] + tile_width * x
-    x_end = tsinfo['min_pos'][0] + tile_width * (x+1)
+    x_end = tsinfo['min_pos'][0] + tile_width * (x+width)
     y_start = tsinfo['min_pos'][1] + tile_width * y
-    y_end = tsinfo['min_pos'][1] + tile_width * (y+1)
+    y_end = tsinfo['min_pos'][1] + tile_width * (y+width)
     
     return (x_start, x_end, y_start, y_end)
     
@@ -109,29 +104,42 @@ def filter_points(data, extent):
     '''
     # print("extent:", extent)
     # print("data.shape", data.shape, data[:,0])
-
-    print("data:", data[:10])
-
     data = data[data[:,0] > extent[0]]
     data = data[data[:,0] < extent[1]]
     
     data = data[data[:,1] > extent[2]]
     data = data[data[:,1] < extent[3]]
         
-    print("extent:", extent, "len(data):", len(data))
-
     return data
 
-def density_tiles(points_file, z, x, y):
+def density_tiles(points_file, z, x, y, width=1, height=1):
+    '''
+    Get a 2D histogram of the given region. If the height and 
+    width are specified, then we need to partition this into 
+    multiple returned tiles.
+    '''
+    returns = []
+    
     with h5py.File(points_file, 'r') as f:
-        filtered_points = filter_points(f['values'][:], 
-                                        tile_bounds(points_file, z, x, y))
-        dt = np.histogram2d(filtered_points[:,0], 
-                              filtered_points[:,1], bins=256)[0].T
-        dt[dt  == 0.] = np.nan
-        return dt
+        # get all the points in the region
+        all_points = filter_points(f['values'][:], 
+                                        tile_bounds(points_file, z, x, y, 
+                                            width, height))
 
-def tiles(points_file, z, x, y):
-    return hgfo.format_dense_tile(
-        density_tiles(points_file, z, x, y).flatten(),
-    )
+        for i in range(width):
+            for j in range(height):
+                # filter from the larger subregion
+                filtered_points = filter_points(all_points, 
+                        tile_bounds(points_file, z, x+i, y+j))
+                                                    
+                dt = np.histogram2d(filtered_points[:,0], 
+                                      filtered_points[:,1], bins=256)[0].T
+                dt[dt  == 0.] = np.nan
+                
+                returns += [((z, x+i, y+j), dt)]
+                
+        return returns
+
+def tiles(points_file, z, x, y, width=1, height=1):
+    return [(tile_position, hgfo.format_dense_tile(data.flatten())) for 
+            (tile_position, data) in density_tiles(points_file, z, x, y, width, height)]

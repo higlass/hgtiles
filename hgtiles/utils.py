@@ -108,6 +108,38 @@ def tiles_wrapper_2d(tile_ids, tiles_function):
 
     return tile_values
 
+def bundled_tiles_wrapper_2d(tile_ids, tiles_function):
+    '''
+    Bundle adjacent tile requests so that they can be 
+    processed concurrently. This is helpful for function 
+    that require scanning a dataset. It's faster to filter 
+    a large region and then break it down into individual 
+    tiles than to go over the entire dataset and filter 
+    individual tiles multiple times.
+    '''
+    tile_values = []
+
+    partitioned_tile_lists = partition_by_adjacent_tiles(tile_ids)
+
+    for tile_group in partitioned_tile_lists:
+        zoom_level = int(tile_group[0].split('.')[1])
+        tileset_id = tile_group[0].split('.')[0]
+
+        tile_positions = [[int(x) for x in t.split('.')[2:4]] for t in tile_group]
+
+        minx = min([t[0] for t in tile_positions])
+        maxx = max([t[0] for t in tile_positions])
+
+        miny = min([t[1] for t in tile_positions])
+        maxy = max([t[1] for t in tile_positions])
+
+        tile_values += [("{}.{}".format(tileset_id, ".".join(map(str, tile_position))), data)
+                for (tile_position, data) in 
+                tiles_function(zoom_level, minx, miny, 
+                width=maxx - minx + 1, height=maxy - miny + 1)]
+
+    return tile_values
+
 def random_tile(function):
         zoom_level = random.randint(0,10)
         x_pos = random.randint(0, 2 ** zoom_level)

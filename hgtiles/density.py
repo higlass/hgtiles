@@ -26,7 +26,8 @@ def csv_to_points(csv_file, output_file):
     width = max_x - min_x
     height = max_y - min_y
     
-    max_width = min(width, height)
+    max_width = max(width, height)
+    print("max_width:", max_width, min_x, min_y, max_x, max_y)
     max_zoom = 30
     
     with h5py.File(output_file, 'w') as f_out:

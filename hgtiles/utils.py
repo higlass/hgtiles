@@ -122,6 +122,8 @@ def bundled_tiles_wrapper_2d(tile_ids, tiles_function):
     partitioned_tile_lists = partition_by_adjacent_tiles(tile_ids)
 
     for tile_group in partitioned_tile_lists:
+        print("tile_group:", tile_group)
+        
         zoom_level = int(tile_group[0].split('.')[1])
         tileset_id = tile_group[0].split('.')[0]
 
@@ -147,7 +149,7 @@ def random_tile(function):
             
         function(hg_points, zoom_level, x_pos, y_pos)
 
-def tile_bounds(tsinfo, z, x, y):
+def tile_bounds(tsinfo, z, x, y, width=1, height=1):
     '''
     Get the coordinate boundaries for the given tile.
 
@@ -161,6 +163,10 @@ def tile_bounds(tsinfo, z, x, y):
         The x position
     y: int
         The y position
+    width: int 
+        Return bounds for a region encompassing multiple tiles 
+    height: int 
+        Return bounds for a region encompassing multiple tiles
     '''
     min_pos = tsinfo['min_pos']
     max_pos = tsinfo['max_pos']
@@ -169,9 +175,9 @@ def tile_bounds(tsinfo, z, x, y):
     
     tile_width = max_width / 2 ** z
     from_x = min_pos[0] + x * tile_width
-    to_x = min_pos[0] + (x+1) * tile_width
+    to_x = min_pos[0] + (x+width) * tile_width
     
     from_y = min_pos[1] + y * tile_width
-    to_y = min_pos[1] + (y+1) * tile_width    
+    to_y = min_pos[1] + (y+height) * tile_width    
     
     return [from_x, from_y, to_x, to_y]

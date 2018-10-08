@@ -1,6 +1,13 @@
 v0.2.11
 
 - Updated the dependencies and added them to install_requires
+- Removed print statements
+- Fixed bugs related to cooler tile loading
+
+v0.2.10
+
+- Added density tiles
+
 
 v0.2.9
 

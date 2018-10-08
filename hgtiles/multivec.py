@@ -57,10 +57,10 @@ def get_tile(f, chromsizes, resolution, start_pos, end_pos, shape):
         the values for the portion of the genome that is visible.
     '''
     binsize = resolution
-    print('binsize:', binsize)
-    print('start_pos:', start_pos, 'end_pos:', end_pos)
-    print("length:", end_pos - start_pos)
-    print('shape:', shape)
+    # print('binsize:', binsize)
+    # print('start_pos:', start_pos, 'end_pos:', end_pos)
+    # print("length:", end_pos - start_pos)
+    # print('shape:', shape)
 
     t0 = time.time()
     arrays = []
@@ -76,7 +76,7 @@ def get_tile(f, chromsizes, resolution, start_pos, end_pos, shape):
     for cid, start, end in abs2genomic([c[1] for c in chromsizes], start_pos, end_pos):
         n_bins = int(np.ceil((end - start) / binsize))
         total_length += end - start
-        # print('cid', cid, start, end, 'tl:', total_length)
+        #print('cid', cid, start, end, 'tl:', total_length)
         
         try:
             t1 = time.time()
@@ -113,7 +113,7 @@ def get_tile(f, chromsizes, resolution, start_pos, end_pos, shape):
                     continue
             '''
             
-            print("offset:", offset, "start_pos", start_pos, end_pos)
+            # print("offset:", offset, "start_pos", start_pos, end_pos)
             x = f['resolutions'][str(resolution)]['values'][chrom][start_pos:end_pos]
             current_binned_data_position += binsize * (end_pos - start_pos)
 
@@ -128,7 +128,7 @@ def get_tile(f, chromsizes, resolution, start_pos, end_pos, shape):
 
             if len(x):
                 num_added += len(x)
-                print('cid:', cid, end-start, total_length, 'num_added:', num_added, 'x:', sum(x))
+                # print('cid:', cid, end-start, total_length, 'num_added:', num_added, 'x:', sum(x))
 
             t2 = time.time()
 
@@ -137,13 +137,13 @@ def get_tile(f, chromsizes, resolution, start_pos, end_pos, shape):
             # beyond the range of the available chromosomes
             # probably means we've requested a range of absolute
             # coordinates that stretch beyond the end of the genome
-            print('zeroes')
+            # print('zeroes')
             x = np.zeros((n_bins, shape[1]))
 
         arrays.append(x)
 
-    print("total_length:", total_length)
-    print('arrays:', len(np.concatenate(arrays)))
+    # print("total_length:", total_length)
+    # print('arrays:', len(np.concatenate(arrays)))
     t3 = time.time()
     # print("total fetch time:", t3 - t0)
 

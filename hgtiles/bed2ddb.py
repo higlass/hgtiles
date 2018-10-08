@@ -52,7 +52,7 @@ def get_1D_tiles(db_file, tile_ids):
     tile_x_start_pos = tile_width * tile_x_pos
     tile_x_end_pos = tile_x_start_pos + (numx * tile_width)
 
-    print('tile_x_start:', tile_x_start_pos, tile_x_end_pos)
+    # print('tile_x_start:', tile_x_start_pos, tile_x_end_pos)
 
     query = '''
     SELECT fromX, toX, fromY, toY, chrOffset, importance, fields, uid
@@ -71,7 +71,7 @@ def get_1D_tiles(db_file, tile_ids):
     rows = c.execute(query).fetchall()
 
     new_rows = col.defaultdict(list)
-    print("len(rows)", len(rows))
+    # print("len(rows)", len(rows))
 
     for r in rows:
         try:

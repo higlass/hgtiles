@@ -150,11 +150,6 @@ def get_bigwig_tile(bwpath, zoom_level, start_pos, end_pos, chromsizes=None):
                           bins=n_bins, missing=np.nan)
             t2 = time.time()
 
-            '''
-            if t2 - t1 > 0.5:
-                print("fetching:", chrom, start, end, n_bins, "fetched time: {:.2f}".format(time.time() - t1))
-            '''
-
             # drop the very last bin if it is smaller than the binsize
             if end == clen and clen % binsize != 0:
                 x = x[:-1]

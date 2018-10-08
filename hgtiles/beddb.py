@@ -69,7 +69,7 @@ def tiles(filepath, tile_ids):
                     higher_xpos)
             new_rows += old_rows
                 
-        print("new_rows length", len(new_rows))
+        # print("new_rows length", len(new_rows))
         to_return += [(tile_id, new_rows)]
 
     return to_return

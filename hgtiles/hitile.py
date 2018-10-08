@@ -52,7 +52,6 @@ def array_to_hitile(old_data, filename, zoom_step=8, chunks=(1e6,), agg_function
 
     for z in range(0, max_zoom, zoom_step):
         dset_length = math.ceil(max_pos / 2 ** z)
-        print('z:', z, 'dset_length:', dset_length)
 
         values_dset = f_new.require_dataset('values_' + str(z), (len(old_data),), 
                              dtype='f', compression='gzip' )
@@ -83,13 +82,13 @@ def array_to_hitile(old_data, filename, zoom_step=8, chunks=(1e6,), agg_function
         # aggregate the data by summing adjacent datapoints
         sys.stdout.write('summing...')
         sys.stdout.flush()
-        print("fdsdsfs:", math.ceil(len(old_data) / zoom_factor), zoom_factor)
-        print("chunks:", chunks, zoom_factor, 'len:', len(old_data))
+        # print("fdsdsfs:", math.ceil(len(old_data) / zoom_factor), zoom_factor)
+        # print("chunks:", chunks, zoom_factor, 'len:', len(old_data))
 
         old_data = old_data.rechunk(chunks)
         min_data = old_data.rechunk(chunks)
         max_data = old_data.rechunk(chunks)
-        print('zoom_factor', zoom_factor, old_data.shape)
+        # print('zoom_factor', zoom_factor, old_data.shape)
 
         old_data = da.coarsen(agg_function, old_data, {0: zoom_factor})
         min_data = da.coarsen(np.min, max_data, {0: zoom_factor})
@@ -181,12 +180,12 @@ def get_data(hdf_file, z, x):
     max_position = int(max_position / 2 ** next_stored_zoom)
     #print("new max_position:", max_position)
 
-    '''
-    print("start_pos:", start_pos)
-    print("end_pos:", end_pos)
-    print("next_stored_zoom", next_stored_zoom)
-    print("max_position:", int(max_position))
-    '''
+
+    #print("start_pos:", start_pos)
+    #print("end_pos:", end_pos)
+    #print("next_stored_zoom", next_stored_zoom)
+    #print("max_position:", int(max_position))
+    
 
     f = hdf_file['values_' + str(int(next_stored_zoom))]
     f_min = hdf_file['mins_' + str(int(next_stored_zoom))]
@@ -224,10 +223,10 @@ def get_data(hdf_file, z, x):
         min_array = aggregate_min(f_min[start_pos:end_pos], int(num_to_agg))
         max_array = aggregate_max(f_max[start_pos:end_pos], int(num_to_agg))
 
-    '''
-    print("ret_array:", f[start_pos:end_pos])
-    print('ret_array:', ret_array)
-    '''
+
+    #print("ret_array:", f[start_pos:end_pos])
+    #print('ret_array:', ret_array)
+    
     #print('nansum', np.nansum(ret_array))
 
     # check to see if we counted the number of NaN values in the given

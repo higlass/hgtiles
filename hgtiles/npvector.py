@@ -32,7 +32,7 @@ def tileset_info(array, bounds=None):
     max_zoom = 0 if max_zoom < 0 else max_zoom
 
     max_width = 2 ** max_zoom * bin_size
-    print('max_zoom:', max_zoom)
+    # print('max_zoom:', max_zoom)
 
     scale_up = max_width / max_dim
 
@@ -40,7 +40,7 @@ def tileset_info(array, bounds=None):
         min_pos = [bounds[0]]
         max_pos = [bounds[1]]
 
-        print('scale_up:', scale_up, max_pos[0] - min_pos[0])
+        # print('scale_up:', scale_up, max_pos[0] - min_pos[0])
 
         max_width = (max_pos[0] - min_pos[0]) * scale_up
     else:
@@ -104,21 +104,21 @@ def tiles(array, z, x, nan_array=None, bin_size=1024):
     divisible_x_pad = divisible_x_width - data.shape[0]
     #print("data.shape", data.shape)
     
-    print("divisible_x_pad:", divisible_x_pad)
+    # print("divisible_x_pad:", divisible_x_pad)
     
     a = np.pad(data, ((0, divisible_x_pad),), 'constant', 
             constant_values=(np.nan,))
 
     b = np.nansum(a.reshape((a.shape[0],-1,num_to_sum)),axis=2)
     ret_array = np.nansum(b.reshape(-1,num_to_sum),axis=1).astype(float)
-    print('ret_array:', ret_array)
+    # print('ret_array:', ret_array)
     ret_array[ret_array == 0.] = np.nan
     #print('ret_array:', ret_array)
 
     #print("sum:", np.nansum(ret_array))
     
     if nan_array is not None:
-        print("normalizing")
+        # print("normalizing")
         # we want to calculate the means of the data points
         not_nan_data = not_nan_array[x_start:x_end]
         na = np.pad(not_nan_data, ((0, divisible_x_pad)), 'constant', 

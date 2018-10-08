@@ -44,15 +44,15 @@ def format_dense_tile(data):
         max_dense > min_f16 and max_dense < max_f16 and
         min_dense > min_f16 and min_dense < max_f16
     ):
-        tile_data = {
+        tile_data.update({
             'dense': base64.b64encode(data.astype('float16')).decode('utf-8'),
             'dtype': 'float16'
-        }
+        })
     else:
-        tile_data = {
+        tile_data.update({
             'dense': base64.b64encode(data.astype('float32')).decode('utf-8'),
             'dtype': 'float32'
-        }
+        })
 
     return tile_data
 

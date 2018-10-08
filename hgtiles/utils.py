@@ -122,7 +122,7 @@ def bundled_tiles_wrapper_2d(tile_ids, tiles_function):
     partitioned_tile_lists = partition_by_adjacent_tiles(tile_ids)
 
     for tile_group in partitioned_tile_lists:
-        print("tile_group:", tile_group)
+        # print("tile_group:", tile_group)
         
         zoom_level = int(tile_group[0].split('.')[1])
         tileset_id = tile_group[0].split('.')[0]

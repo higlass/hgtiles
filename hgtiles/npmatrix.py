@@ -30,7 +30,7 @@ def tileset_info(grid, bounds=None):
     '''
     bin_size = 256
     max_dim = max(grid.shape)
-    print("grid.shape:", grid.shape)
+    # print("grid.shape:", grid.shape)
     max_zoom = math.ceil(math.log(max_dim / bin_size) / math.log(2))
     max_zoom = 0 if max_zoom < 0 else max_zoom
 
@@ -43,7 +43,7 @@ def tileset_info(grid, bounds=None):
         min_pos = [bounds[0], bounds[1]]
         max_pos = [bounds[2], bounds[3]]
 
-        print('scale_up:', scale_up, max_pos[0] - min_pos[0])
+        # print('scale_up:', scale_up, max_pos[0] - min_pos[0])
 
         max_width = (max_pos[0] - min_pos[0]) * scale_up
         max_width1 = (max_pos[1] - min_pos[1]) * scale_up
@@ -82,7 +82,7 @@ def tiles(grid, z, x, y, nan_grid=None, bin_size=256):
         The number of values per bin
     '''
     max_dim = max(grid.shape)
-    #print("max_dim", max_dim)
+    # print("max_dim", max_dim)
     
     max_zoom = math.ceil(math.log(max_dim / bin_size) / math.log(2))
     max_zoom = 0 if max_zoom < 0 else max_zoom
@@ -103,10 +103,10 @@ def tiles(grid, z, x, y, nan_grid=None, bin_size=256):
     # print("y_start:", y_start, y_end)
     
     num_to_sum = 2 ** (max_zoom - z)
-    #print("num_to_sum", num_to_sum)
+    # print("num_to_sum", num_to_sum)
     
     data = grid[x_start:x_end,y_start:y_end]
-    #print("data:", data)
+    # print("data:", data)
     
     # add some data so that the data can be divided into squares
     divisible_x_width = num_to_sum * math.ceil(data.shape[0] / num_to_sum)
@@ -114,10 +114,10 @@ def tiles(grid, z, x, y, nan_grid=None, bin_size=256):
 
     divisible_x_pad = divisible_x_width - data.shape[0]
     divisible_y_pad = divisible_y_width - data.shape[1]
-    #print("data.shape", data.shape)
+    # print("data.shape", data.shape)
     
-    print("divisible_x_pad:", divisible_x_pad)
-    print("divisible_y_pad:", divisible_y_pad)
+    # print("divisible_x_pad:", divisible_x_pad)
+    # print("divisible_y_pad:", divisible_y_pad)
     
     a = np.pad(data, ((0, divisible_x_pad),(0,divisible_y_pad)), 'constant', 
             constant_values=(np.nan,np.nan))
@@ -130,7 +130,7 @@ def tiles(grid, z, x, y, nan_grid=None, bin_size=256):
     #print("sum:", np.nansum(ret_array))
     
     if nan_grid is not None:
-        print("normalizing")
+        #print("normalizing")
         # we want to calculate the means of the data points
         not_nan_data = not_nan_grid[x_start:x_end,y_start:y_end]
         na = np.pad(not_nan_data, ((0, divisible_x_pad),(0,divisible_y_pad)), 'constant', 

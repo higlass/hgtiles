@@ -4,7 +4,7 @@ import os.path as op
 
 def get_counts(filename, zoom, pos):
     data = hgbad.tiles(filename, ["b.{}.{}".format(zoom, pos)])
-    print('data:', len(data[0][1][pos]))
+    # print('data:', len(data[0][1][pos]))
     counts = col.defaultdict(int)
 
     for i,d in enumerate(data[0][1][pos]):

@@ -1,3 +1,7 @@
+v0.2.15
+
+- Ability to pass in a chromosome order to the bigwig track
+
 v0.2.14
 
 - Updated the dependencies and added them to install_requires

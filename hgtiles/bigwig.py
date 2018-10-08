@@ -88,30 +88,6 @@ def abs2genomic(chromsizes, start_pos, end_pos):
         start = 0
     yield cid_hi, start, rel_pos_hi
 
-def get_chromsizes(bwpath):
-    '''
-    Get the chromosome sizes from this bigwig file. 
-
-    Parameters 
-    ----------
-    bwpath: string
-        The filepath of the bigwig file 
-
-    Returns 
-    -------
-    chromsizes_list: [[chrom, size],...]
-        A 2d array containing the chromosome names and their sizes 
-    '''
-    chromsizes = bbi.chromsizes(bwpath)
-
-    print('chromsizes:', chromsizes)
-    for d in chromsizes:
-        print("d:", d)
-    for chrom,size in chromsizes:
-        chromsizes_list += [[chrom, size]]
-
-    return chromsizes_list
-
 def tileset_info(bwpath, chromsizes=None):
     '''
     Get the tileset info for a bigWig file
@@ -144,7 +120,7 @@ def tileset_info(bwpath, chromsizes=None):
     else:
         chromsizes_list = chromsizes
     
-    min_tile_cover = np.ceil(sum([c[1] for c in chromsizes]) / TILE_SIZE)
+    min_tile_cover = np.ceil(sum([int(c[1]) for c in chromsizes_list]) / TILE_SIZE)
     max_zoom = int(np.ceil(np.log2(min_tile_cover)))
 
     tileset_info = {

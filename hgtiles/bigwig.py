@@ -88,7 +88,31 @@ def abs2genomic(chromsizes, start_pos, end_pos):
         start = 0
     yield cid_hi, start, rel_pos_hi
 
-def tileset_info(bwpath):
+def get_chromsizes(bwpath):
+    '''
+    Get the chromosome sizes from this bigwig file. 
+
+    Parameters 
+    ----------
+    bwpath: string
+        The filepath of the bigwig file 
+
+    Returns 
+    -------
+    chromsizes_list: [[chrom, size],...]
+        A 2d array containing the chromosome names and their sizes 
+    '''
+    chromsizes = bbi.chromsizes(bwpath)
+
+    print('chromsizes:', chromsizes)
+    for d in chromsizes:
+        print("d:", d)
+    for chrom,size in chromsizes:
+        chromsizes_list += [[chrom, size]]
+
+    return chromsizes_list
+
+def tileset_info(bwpath, chromsizes=None):
     '''
     Get the tileset info for a bigWig file
 
@@ -96,6 +120,10 @@ def tileset_info(bwpath):
     ----------
     bwpath: string
         The path to the bigwig file from which to retrieve data
+    chromsizes: [[chrom, size],...]
+        A list of chromosome sizes associated with this tileset.
+        Typically passed in to specify in what order data from 
+        the bigwig should be returned.
 
     Returns
     -------
@@ -106,16 +134,18 @@ def tileset_info(bwpath):
                     }
     '''
     TILE_SIZE = 1024
-    chromsizes = bbi.chromsizes(bwpath)
-    chromosomes = cooler.util.natsorted(chromsizes.keys())
-    chromsizes = pd.Series(chromsizes)[chromosomes]
-    min_tile_cover = np.ceil(sum(chromsizes) / TILE_SIZE)
+
+    if chromsizes is None:
+        chromsizes = get_chromsizes(bwpath)
+        chromsizes_list = []
+
+        for chrom,size in chromsizes.iteritems():
+            chromsizes_list += [[chrom, size]]
+    else:
+        chromsizes_list = chromsizes
+    
+    min_tile_cover = np.ceil(sum([c[1] for c in chromsizes]) / TILE_SIZE)
     max_zoom = int(np.ceil(np.log2(min_tile_cover)))
-
-    chromsizes_list = []
-
-    for chrom,size in chromsizes.iteritems():
-        chromsizes_list += [[chrom, size]]
 
     tileset_info = {
         'min_pos': [0],

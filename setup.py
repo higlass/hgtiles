@@ -16,7 +16,7 @@ install_requires = [
 
 setup(
     name='hgtiles',
-    version='0.2.13',
+    version='0.2.14',
     description='Tile loading for higlass-server',
     author='Peter Kerpedjiev',
     author_email='pkerpedjiev@gmail.com',

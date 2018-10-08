@@ -158,13 +158,18 @@ def get_bigwig_tile(bwpath, zoom_level, start_pos, end_pos, chromsizes=None):
             # probably means we've requested a range of absolute
             # coordinates that stretch beyond the end of the genome
             x = np.zeros(n_bins)
+            x[:] = np.nan
+        except KeyError:
+            # probably requested a chromosome that doesn't exist (e.g. chrM)
+            x = np.zeros(n_bins)
+            x[:] = np.nan
 
         arrays.append(x)
 
     return np.concatenate(arrays)
 
 
-def tiles(bwpath, tile_ids, chromsizes_map={}):
+def tiles(bwpath, tile_ids, chromsizes_map={}, chromsizes=None):
     '''
     Generate tiles from a bigwig file.
 
@@ -177,7 +182,11 @@ def tiles(bwpath, tile_ids, chromsizes_map={}):
         to be retrieved
     chromsizes_map: {uid: []}
         A set of chromsizes listings corresponding to the parameters of the 
-        tile_ids
+        tile_ids. To be used if a chromsizes id is passed in with the tile id 
+        with the `|cos:id` tag in the tile id
+    chromsizes: [[chrom, size],...]
+        A 2d array containing chromosome names and sizes. Overrides the 
+        chromsizes in chromsizes_map
 
     Returns
     -------
@@ -195,28 +204,33 @@ def tiles(bwpath, tile_ids, chromsizes_map={}):
 
         tile_options = dict([o.split(':') for o in tile_option_parts])
 
-        chromsizes_id = None
-        if 'cos' in tile_options:
-            chromsizes_id = tile_options['cos']
-
-        if chromsizes_id in chromsizes_map:
-            chromsizes = chromsizes_map[chromsizes_id]
+        if chromsizes:
+            chromnames = [c[0] for c in chromsizes]
+            chromlengths = [int(c[1]) for c in chromsizes]
+            cs = np.array(chromsizes)
+            chromsizes_to_use = pd.Series(chromlengths, index=chromnames)
         else:
-            chromsizes = None
+            chromsizes_id = None
+            if 'cos' in tile_options:
+                chromsizes_id = tile_options['cos']
+            if chromsizes_id in chromsizes_map:
+                chromsizes_to_use = chromsizes_map[chromsizes_id]
+            else:
+                chromsizes_to_use = None
 
         zoom_level = tile_position[0]
         tile_pos = tile_position[1]
         
         # this doesn't combine multiple consequetive ids, which
         # would speed things up
-        if chromsizes is None:
-            chromsizes = get_chromsizes(bwpath)
+        if chromsizes_to_use is None:
+            chromsizes_to_use = get_chromsizes(bwpath)
 
-        max_depth = get_quadtree_depth(chromsizes)
+        max_depth = get_quadtree_depth(chromsizes_to_use)
         tile_size = TILE_SIZE * 2 ** (max_depth - zoom_level)
         start_pos = tile_pos * tile_size
         end_pos = start_pos + tile_size
-        dense = get_bigwig_tile(bwpath, zoom_level, start_pos, end_pos, chromsizes)
+        dense = get_bigwig_tile(bwpath, zoom_level, start_pos, end_pos, chromsizes_to_use)
 
         tile_value = hgfo.format_dense_tile(dense)
 

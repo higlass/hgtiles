@@ -111,12 +111,19 @@ def tileset_info(bwpath):
     chromsizes = pd.Series(chromsizes)[chromosomes]
     min_tile_cover = np.ceil(sum(chromsizes) / TILE_SIZE)
     max_zoom = int(np.ceil(np.log2(min_tile_cover)))
+
+    chromsizes_list = []
+
+    for chrom,size in chromsizes.iteritems():
+        chromsizes_list += [[chrom, size]]
+
     tileset_info = {
         'min_pos': [0],
         'max_pos': [TILE_SIZE * 2 ** max_zoom],
         'max_width': TILE_SIZE * 2 ** max_zoom,
         'tile_size': TILE_SIZE,
-        'max_zoom': max_zoom
+        'max_zoom': max_zoom,
+        'chromsizes': chromsizes_list
     }
     return tileset_info
 

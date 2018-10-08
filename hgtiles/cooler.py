@@ -270,6 +270,8 @@ def make_tiles(hdf_for_resolution, resolution, x_pos, y_pos, transform_type='def
     end2 = (y_pos + y_width) * tile_size
 
     '''
+    print("resolution:", resolution)
+    print("tile_size:", tile_size)
     print("transform_type:", transform_type);
     print('start1:', start1, end1)
     print('start2:', start2, end2)
@@ -289,8 +291,8 @@ def make_tiles(hdf_for_resolution, resolution, x_pos, y_pos, transform_type='def
 
     #print("data:", data)
 
-    #print("x_width:", x_width)
-    #print("y_width:", y_width)
+    # print("x_width:", x_width)
+    # print("y_width:", y_width)
     # split out the individual tiles
     data_by_tilepos = {}
 
@@ -340,6 +342,8 @@ def make_tiles(hdf_for_resolution, resolution, x_pos, y_pos, transform_type='def
                 sub_bins1 = sub_bins1[sub_bins1['genome_start'] < end1]
                 sub_bins2 = sub_bins2[sub_bins2['genome_start'] < end2]
 
+                # print("sub_bins1:", sub_bins1)
+
                 nan_bins1 = sub_bins1[np.isnan(sub_bins1['weight'])]
                 nan_bins2 = sub_bins2[np.isnan(sub_bins2['weight'])]
 
@@ -357,7 +361,7 @@ def make_tiles(hdf_for_resolution, resolution, x_pos, y_pos, transform_type='def
 
                 out[:, bend1] = np.nan
                 out[bend2, :] = np.nan
-
+                
             #print('sum(isnan1)', isnan1-1)
             #print('out.ravel()', sum(np.isnan(out.ravel())), len(out.ravel()))
             data_by_tilepos[(x_pos + x_offset, y_pos + y_offset)] = out.ravel()

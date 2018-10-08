@@ -6,7 +6,7 @@ install_requires = [
     'numpy',
     'pysam',
     'h5py',
-    'pandas',
+    'pandas>=0.23.0',
     'slugid',
     'numpy',
     'scipy==1.0.1',

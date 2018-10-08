@@ -21,7 +21,7 @@ def test_bedarcsdb_tiles1():
 
     for ttg in tiles_to_get:
         counts = get_counts(filename, *ttg)
-        print(*ttg, counts)
+        # print(*ttg, counts)
     #counts1 = get_counts(filename, 0,0)
     #counts1 = get_counts(filename, 1,1)
     # counts2 = get_counts(filename, 2,2)
@@ -34,14 +34,12 @@ def test_bedarcsdb_tiles1():
     #print('1', counts1[('21', 'X')])
     #print('2', counts1[('21', 'X')])
 
-    '''
-    print("1,1", get_counts(filename, 1,1))
-    print('2,2', get_counts(filename, 2,2))
-    '''
+    #print("1,1", get_counts(filename, 1,1))
+    #print('2,2', get_counts(filename, 2,2))
 
     '''
     data = hgbad.tiles(filename, ["b.0.0"])
-    print('data:', len(data[0][1][0]))
+    #print('data:', len(data[0][1][0]))
     counts = col.defaultdict(int)
 
     for i,d in enumerate(data[0][1][0]):
@@ -49,23 +47,23 @@ def test_bedarcsdb_tiles1():
         #print('d:', d)
 
         counts[(chr1,chr2)] += 1
-    print('counts:', counts)
+    #print('counts:', counts)
 
-    print('counts:', counts)
+    #print('counts:', counts)
     return
 
     data = hgbad.tiles(filename, ["b.4.11".format(pos)])
-    print('data:', len(data[0][1][11]))
+    #print('data:', len(data[0][1][11]))
     counts = col.defaultdict(int)
 
     for d in data[0][1][11]:
         chr1,chr2 = sorted([d['fields'][0], d['fields'][3]])
 
         counts[(chr1,chr2)] += 1
-    print('counts:', counts)
+    #print('counts:', counts)
 
     data = hgbad.tiles(filename, ["b.4.10".format(pos)])
-    print('data:', len(data[0][1][10]))
+    #print('data:', len(data[0][1][10]))
     counts = col.defaultdict(int)
 
     for i,d in enumerate(data[0][1][10]):
@@ -73,7 +71,7 @@ def test_bedarcsdb_tiles1():
         #print('d:', d)
 
         counts[(chr1,chr2)] += 1
-    print('counts:', counts)
+    #print('counts:', counts)
     '''
 
 def test_bedarcsdb_tiles():

@@ -21,4 +21,4 @@ def test_hitile():
 
         with h5py.File(output_file, 'r') as f:
             (means, mins, maxs) = hghi.get_data(f, 0, 0)
-        print("means, mins:", means[:10], mins[:10], maxs[:10])
+        # print("means, mins:", means[:10], mins[:10], maxs[:10])

@@ -11,5 +11,5 @@ def test_tileset_info():
     filename = op.join('data', 'wgEncodeCaltechRnaSeqHuvecR1x75dTh1014IlnaPlusSignalRep2.bigWig')
 
     tileset_info = hgbi.tileset_info(filename)
-    print('tileset_info', tileset_info)
+    # print('tileset_info', tileset_info)
 

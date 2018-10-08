@@ -80,8 +80,8 @@ def array_to_hitile(old_data, filename, zoom_step=8, chunks=(1e6,), agg_function
                 (max_data, [max_data[-1]] * ( zoom_factor - len(max_data) % zoom_factor )))
 
         # aggregate the data by summing adjacent datapoints
-        sys.stdout.write('summing...')
-        sys.stdout.flush()
+        # sys.stdout.write('summing...')
+        # sys.stdout.flush()
         # print("fdsdsfs:", math.ceil(len(old_data) / zoom_factor), zoom_factor)
         # print("chunks:", chunks, zoom_factor, 'len:', len(old_data))
 
@@ -95,8 +95,8 @@ def array_to_hitile(old_data, filename, zoom_step=8, chunks=(1e6,), agg_function
         max_data = da.coarsen(np.max, max_data, {0: zoom_factor})
         
         # reshape( (math.ceil(len(old_data) / zoom_factor), zoom_factor)).sum(axis=1)
-        sys.stdout.write(' done\n')
-        sys.stdout.flush()
+        #sys.stdout.write(' done\n')
+        #sys.stdout.flush()
 
         '''
         if len(old_data) < 10000:

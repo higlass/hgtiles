@@ -1,6 +1,7 @@
 v0.2.15
 
 - Ability to pass in a chromosome order to the bigwig track
+- Added chromsize file handler
 
 v0.2.14
 

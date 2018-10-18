@@ -7,6 +7,9 @@ import h5py
 import itertools as it
 import numpy as np
 import pandas as pd
+import logging
+
+logger = logging.getLogger(__name__)
 
 global mats
 mats = {}
@@ -21,20 +24,20 @@ TILE_SIZE = 256
 
 def abs_coord_2_bin(c, abs_pos, chroms, chrom_cum_lengths, chrom_sizes):
     """Get bin ID from absolute coordinates.
- 
+
     Args:
         c (Cooler): Cooler instance of a .cool file.
         abs_pos (int): Absolute coordinate to be translated.
- 
+
     Returns:
         int: Bin number.
     """
- 
+
     try:
         chr_id = np.flatnonzero(chrom_cum_lengths > abs_pos)[0] - 1
     except IndexError:
         return c.info['nbins']
- 
+
     chrom = chroms[chr_id]
     rel_pos = abs_pos - chrom_cum_lengths[chr_id]
 
@@ -44,24 +47,24 @@ def abs_coord_2_bin(c, abs_pos, chroms, chrom_cum_lengths, chrom_sizes):
 def get_chromosome_names_cumul_lengths(c):
     '''
     Get the chromosome names and cumulative lengths:
- 
+
     Args:
- 
+
     c (Cooler): A cooler file
- 
+
     Return:
- 
+
     (names, sizes, lengths) -> (list(string), dict, np.array(int))
     '''
     chrom_names = c.chromnames
     chrom_sizes = dict(c.chromsizes)
     chrom_cum_lengths = np.r_[0, np.cumsum(c.chromsizes.values)]
     return chrom_names, chrom_sizes, chrom_cum_lengths
- 
- 
+
+
 def get_data(f, start_pos_1, end_pos_1, start_pos_2, end_pos_2, transform='default', resolution=None):
     """Get balanced pixel data.
- 
+
     Args:
         f: h5py.File
             An HDF5 Group that contains the cooler for this resolution
@@ -69,15 +72,15 @@ def get_data(f, start_pos_1, end_pos_1, start_pos_2, end_pos_2, transform='defau
         end_pos_1 (int): Test.
         start_pos_2 (int): Test.
         end_pos_2 (int): Test.
- 
+
     Returns:
         DataFrame: Annotated cooler pixels.
     """
- 
+
     c = cooler.Cooler(f)
- 
+
     (chroms, chrom_sizes, chrom_cum_lengths) = get_chromosome_names_cumul_lengths(c)
- 
+
     i0 = abs_coord_2_bin(c, start_pos_1, chroms, chrom_cum_lengths, chrom_sizes)
     i1 = abs_coord_2_bin(c, end_pos_1, chroms, chrom_cum_lengths, chrom_sizes)
 
@@ -91,7 +94,7 @@ def get_data(f, start_pos_1, end_pos_1, start_pos_2, end_pos_2, transform='defau
         # return an empty matrix
         i0,i1,j0,j1 = 0,0,0,0
 
-        return (pd.DataFrame(columns=['genome_start1', 'genome_start2', 'balanced']), 
+        return (pd.DataFrame(columns=['genome_start1', 'genome_start2', 'balanced']),
                 (pd.DataFrame({'genome_start': [],
                                'genome_end': [],
                                'weight': []}),
@@ -109,7 +112,7 @@ def get_data(f, start_pos_1, end_pos_1, start_pos_2, end_pos_2, transform='defau
     if not len(pixels):
         return (pd.DataFrame(columns=['genome_start1', 'genome_start2', 'balanced']), (None, None))
     '''
- 
+
     # select bin columns to extract
     cols = ['chrom', 'start', 'end']
     if (transform == 'default' and 'weight' in c.bins()) or transform == 'weight':
@@ -117,7 +120,7 @@ def get_data(f, start_pos_1, end_pos_1, start_pos_2, end_pos_2, transform='defau
     elif transform in ('KR', 'VC', 'VC_SQRT'):
         cols.append(transform)
 
-    bins = c.bins(convert_enum=False)[cols]    
+    bins = c.bins(convert_enum=False)[cols]
     pixels = cooler.annotate(pixels, bins)
 
     pixels['genome_start1'] = chrom_cum_lengths[pixels['chrom1']] + pixels['start1']
@@ -152,39 +155,39 @@ def get_data(f, start_pos_1, end_pos_1, start_pos_2, end_pos_2, transform='defau
     else:
         return (pixels[['genome_start1', 'genome_start2', 'count']], (None, None))
 
- 
+
 def get_info(file_path):
     """Get information of a cooler file.
- 
+
     Args:
         file_path (str): Path to a cooler file.
- 
+
     Returns:
         dict: Dictionary containing basic information about the cooler file.
     """
- 
+
     with h5py.File(file_path, 'r') as f:
         max_zoom = f.attrs.get('max-zoom')
- 
+
         if max_zoom is None:
             logger.info('no zoom found')
             raise ValueError(
                 'The `max_zoom` attribute is missing.'
             )
- 
+
         c = cooler.Cooler(f["0"])
- 
+
         (chroms, chrom_sizes, chrom_cum_lengths) = get_chromosome_names_cumul_lengths(c)
- 
+
         total_length = int(chrom_cum_lengths[-1])
         max_zoom = f.attrs['max-zoom']
         bin_size = int(f[str(max_zoom)].attrs['bin-size'])
- 
+
         max_width = bin_size * TILE_SIZE * 2**max_zoom
-        
+
         # the list of available data transforms
         transforms = {}
-        
+
         for i in range(max_zoom):
             f_for_zoom = f[str(i)]['bins']
 
@@ -205,14 +208,14 @@ def get_info(file_path):
             'bins_per_dimension': TILE_SIZE,
             'transforms': transforms.values()
         }
- 
+
     return info
 
 
 def get_quadtree_depth(chromsizes, binsize):
     """
     Depth of quad tree necessary to tesselate the concatenated genome with quad
-    tiles such that linear dimension of the tiles is a preset multiple of the 
+    tiles such that linear dimension of the tiles is a preset multiple of the
     genomic resolution.
 
     """
@@ -250,7 +253,7 @@ def make_tiles(hdf_for_resolution, resolution, x_pos, y_pos, transform_type='def
         The starting y position
     cooler_file: string
         The filename of the cooler file to get the data from
-    x_width: int 
+    x_width: int
         The number of tiles to retrieve along the x dimension
     y_width: int
         The number of tiles to retrieve along the y dimension
@@ -281,7 +284,7 @@ def make_tiles(hdf_for_resolution, resolution, x_pos, y_pos, transform_type='def
     total_length = sum(chrom_sizes.values())
 
     (data, (bins1, bins2)) = get_data(
-        hdf_for_resolution, start1, end1 - 1, start2, end2- 1, 
+        hdf_for_resolution, start1, end1 - 1, start2, end2- 1,
         transform_type, resolution=resolution
     )
 
@@ -313,7 +316,7 @@ def make_tiles(hdf_for_resolution, resolution, x_pos, y_pos, transform_type='def
             #print("x_pos:", x_pos, "x_offset", x_offset)
             #print("start1", start1, 'end1', end1)
             #print("start2", start2, 'end2', end2)
-            
+
             df = data[data['genome_start1'] >= start1]
             df = df[df['genome_start1'] < end1]
 
@@ -359,7 +362,7 @@ def make_tiles(hdf_for_resolution, resolution, x_pos, y_pos, transform_type='def
 
                 out[:, bend1] = np.nan
                 out[bend2, :] = np.nan
-                
+
             #print('sum(isnan1)', isnan1-1)
             #print('out.ravel()', sum(np.isnan(out.ravel())), len(out.ravel()))
             data_by_tilepos[(x_pos + x_offset, y_pos + y_offset)] = out.ravel()
@@ -447,7 +450,7 @@ def get_available_transforms(cooler):
 
 def make_mats(filepath):
     '''
-    Create the file handle and tileset info for a cooler 
+    Create the file handle and tileset info for a cooler
     tileset
     '''
     f = h5py.File(filepath, 'r')
@@ -473,7 +476,7 @@ def make_mats(filepath):
         # get the genome size
         resolution = list(f['resolutions'].keys())[0]
         genome_length = int(sum(f['resolutions'][resolution]['chroms']['length']))
-        
+
         info['max_pos'] = [genome_length, genome_length]
         info['min_pos'] = [1,1]
 
@@ -554,7 +557,7 @@ def tiles(filepath, tile_ids):
         new_tile_ids += [new_tile_id]
 
     generated_tiles = generate_tiles(filepath, new_tile_ids)
-    
+
     tiles_to_return = []
     for tile_id, tile_value in generated_tiles:
         if tile_id in transform_id_to_original_id:
@@ -589,7 +592,7 @@ def generate_tiles(filepath, tile_ids):
     tileset_file_and_info = mats[filepath]
 
     tile_ids_by_zoom_and_transform = bin_tiles_by_zoom_level_and_transform(tile_ids).values()
-    partitioned_tile_ids = list(it.chain(*[hgut.partition_by_adjacent_tiles(t) 
+    partitioned_tile_ids = list(it.chain(*[hgut.partition_by_adjacent_tiles(t)
         for t in tile_ids_by_zoom_and_transform]))
 
     generated_tiles = []
@@ -632,13 +635,13 @@ def generate_tiles(filepath, tile_ids):
         miny = min([t[1] for t in tile_positions])
         maxy = max([t[1] for t in tile_positions])
 
-        tile_data_by_position = make_tiles(hdf_for_resolution, 
+        tile_data_by_position = make_tiles(hdf_for_resolution,
                 resolution,
-                minx, miny, 
+                minx, miny,
                 transform_type,
                 maxx-minx+1, maxy-miny+1)
 
-        tiles = [(".".join(map(str, [tileset_id] + [zoom_level] + list(position) + [transform_type])), 
+        tiles = [(".".join(map(str, [tileset_id] + [zoom_level] + list(position) + [transform_type])),
             hgfo.format_dense_tile(tile_data))
                 for (position, tile_data) in tile_data_by_position.items()]
 

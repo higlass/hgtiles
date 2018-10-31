@@ -120,7 +120,6 @@ def tileset_info(bwpath, chromsizes=None):
     else:
         chromsizes_list = chromsizes
     
-    print("hi")
     min_tile_cover = np.ceil(sum([int(c[1]) for c in chromsizes_list]) / TILE_SIZE)
     max_zoom = int(np.ceil(np.log2(min_tile_cover)))
 

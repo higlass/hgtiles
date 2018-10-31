@@ -1,3 +1,8 @@
+v0.2.16
+
+- Fixed logging bug 
+- Updated requirements
+
 v0.2.15
 
 - Ability to pass in a chromosome order to the bigwig track

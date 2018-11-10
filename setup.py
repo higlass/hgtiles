@@ -9,7 +9,6 @@ install_requires = [
     'pandas>=0.23.0',
     'slugid',
     'numpy',
-    'scipy==1.0.1',
     'cooler',
     'pybbi==0.1.3',
 ]

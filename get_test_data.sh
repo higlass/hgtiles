@@ -5,3 +5,4 @@ wget -NP data/ https://s3.amazonaws.com/pkerp/public/sample_htime.json
 wget -NP data/ https://s3.amazonaws.com/pkerp/public/gene_annotations.short.db
 wget -NP data/ https://s3.amazonaws.com/pkerp/public/wgEncodeCaltechRnaSeqHuvecR1x75dTh1014IlnaPlusSignalRep2.bigWig
 wget -NP data/ https://s3.amazonaws.com/pkerp/public/points_density.h5
+wget -NP data/ https://s3.amazonaws.com/pkerp/public/int_matrices.hdf5

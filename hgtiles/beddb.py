@@ -114,7 +114,12 @@ def get_1D_tiles(db_file, zoom, tile_x_pos, num_tiles=1):
         rStartPos <= {}
     '''.format(zoom, tile_start_pos, tile_end_pos)
 
+    import time
+    t1 = time.time()
     rows = c.execute(query).fetchall()
+    t2 = time.time()
+    print("lr", len(rows))
+    print("time:", t2 - t1)
 
     new_rows = []
 

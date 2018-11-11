@@ -44,14 +44,12 @@ def tiles(f, z,x,y):
     tile_y_end = tile_y_start + n_bins
 
     mat = f['resolutions'][str(resolutions[z])]
-    data = mat[tile_x_start:tile_x_end,
+    data = mat[tile_y_start:tile_y_end,
         tile_y_start:tile_y_end]
 
     x_pad = n_bins - data.shape[0]
     y_pad = n_bins - data.shape[1]
 
-    print("x_pad:", x_pad)
-    print("y_pad", y_pad)
     if x_pad > 0 or y_pad > 0:
         data = np.pad(data, ((0, x_pad), (0, y_pad)), 'constant',
             constant_values = (np.nan, np.nan))

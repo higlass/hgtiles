@@ -104,6 +104,8 @@ def get_1D_tiles(db_file, zoom, tile_x_pos, num_tiles=1):
     tile_start_pos = tile_width * tile_x_pos
     tile_end_pos = tile_start_pos + num_tiles * tile_width
 
+    print("tiles_start_pos", tile_start_pos, tile_end_pos)
+
     query = '''
     SELECT startPos, endPos, chrOffset, importance, fields, uid
     FROM intervals,position_index

@@ -104,8 +104,6 @@ def get_1D_tiles(db_file, zoom, tile_x_pos, num_tiles=1):
     tile_start_pos = tile_width * tile_x_pos
     tile_end_pos = tile_start_pos + num_tiles * tile_width
 
-    print("tiles_start_pos", tile_start_pos, tile_end_pos)
-
     query = '''
     SELECT startPos, endPos, chrOffset, importance, fields, uid
     FROM intervals,position_index
@@ -120,8 +118,6 @@ def get_1D_tiles(db_file, zoom, tile_x_pos, num_tiles=1):
     t1 = time.time()
     rows = c.execute(query).fetchall()
     t2 = time.time()
-    print("lr", len(rows))
-    print("time:", t2 - t1)
 
     new_rows = []
 

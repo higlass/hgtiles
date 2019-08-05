@@ -1,3 +1,7 @@
+**INFO: This repository is outdated and superseded by [clodius.tiles](https://github.com/higlass/clodius/tree/develop/clodius/tiles)**
+
+---
+
 # HiGlass Tiles repository
 
 This repository contains functions for serving tiles from various file formats.
